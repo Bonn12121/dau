@@ -1,5 +1,4 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { BookOpen, Edit3, Play, Plus, Search, Trash2, Trophy, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Shell } from "@/components/shell";
 import { useLaunch } from "@/components/use-launch";
@@ -31,28 +30,18 @@ function Library() {
     return quiz.title.toLowerCase().includes(q.trim().toLowerCase());
   });
 
-  const CARD_COLORS = [
-    "from-[#ff3355] to-[#d81b60]",
-    "from-[#2582f7] to-[#1368ce]",
-    "from-[#32b814] to-[#1e7809]",
-    "from-[#ff9900] to-[#d87a00]",
-  ];
+  const ACCENTS = ["border-t-[#e21b3c]", "border-t-[#1368ce]", "border-t-[#26890c]", "border-t-[#d89e00]"];
 
   return (
     <Shell wide>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-gold">
-            <BookOpen className="size-3.5" /> Kho Đề Đấu Trường
-          </span>
-          <h1 className="mt-2 font-serif text-4xl font-black text-white sm:text-5xl">
-            Khám phá & Thử sức
-          </h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted">Tủ đề</p>
+          <h1 className="font-serif text-4xl font-extrabold text-white">Chọn đề luyện tập</h1>
         </div>
-        <div className="flex gap-2.5">
-          <label className="btn-3d flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-stage-soft px-4 text-sm font-bold text-white">
-            <Upload className="size-4" />
-            <span>Nhập JSON</span>
+        <div className="flex gap-2">
+          <label className="grid min-h-10 cursor-pointer place-items-center rounded-control bg-stage-soft px-3.5 text-xs font-bold text-white hover:bg-line">
+            Nhập JSON
             <input
               type="file"
               accept="application/json"
@@ -69,7 +58,7 @@ function Library() {
                     importQuizzes(parsed.quizzes);
                   }
                 } catch {
-                  setError("Tệp không phải JSON hợp lệ.");
+                  setError("Tệp không phải JSON.");
                 }
               }}
             />
@@ -77,34 +66,26 @@ function Library() {
           <Link
             to="/studio"
             search={{ id: "" }}
-            className="btn-3d flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-[#ff3355] to-[#ff6b00] px-4 text-sm font-extrabold text-white shadow-lg"
+            className="grid min-h-10 place-items-center rounded-control bg-paper px-3.5 text-xs font-bold text-ink"
           >
-            <Plus className="size-4" />
-            <span>Soạn đề mới</span>
+            Soạn mới
           </Link>
         </div>
       </div>
 
-      {error && (
-        <p className="mt-3 rounded-xl bg-stamp/20 px-4 py-2 text-sm font-bold text-stamp">
-          ⚠️ {error}
-        </p>
-      )}
+      {error && <p className="mt-3 text-sm text-stamp">{error}</p>}
 
-      {/* Control Bar: Mode & Question Limit */}
-      <div className="glass-card mt-6 flex flex-wrap items-center justify-between gap-4 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-muted mr-1">Chế độ:</span>
+      {/* Mode & Limit Controls */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-stage-2 p-3">
+        <div className="flex flex-wrap gap-1.5">
           {MODES.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setMode(item.id)}
               className={cn(
-                "rounded-xl px-3.5 py-2 text-xs font-extrabold transition",
-                mode === item.id
-                  ? "bg-white text-ink shadow-md scale-105"
-                  : "bg-white/5 text-muted hover:bg-white/10 hover:text-white",
+                "rounded-lg px-3 py-1.5 text-xs font-bold transition",
+                mode === item.id ? "bg-paper text-ink" : "text-muted hover:text-white",
               )}
             >
               {item.name}
@@ -113,130 +94,102 @@ function Library() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="font-extrabold uppercase tracking-wider text-muted mr-1">Số câu:</span>
+          <span className="font-semibold text-muted mr-1">Số câu:</span>
           {[null, 5, 10, 15, 20, 30].map((count) => (
             <button
               key={count ?? "all"}
               type="button"
               onClick={() => setCustomCount(count)}
               className={cn(
-                "rounded-xl px-3 py-1.5 font-extrabold transition-colors",
-                customCount === count
-                  ? "bg-gold text-ink shadow-sm scale-105"
-                  : "bg-white/5 text-muted hover:bg-white/10 hover:text-white",
+                "rounded-lg px-2.5 py-1 font-bold transition",
+                customCount === count ? "bg-gold text-gold-ink" : "bg-stage-soft text-muted hover:text-white",
               )}
             >
-              {count === null ? "Tất cả" : `${count} câu`}
+              {count === null ? "Tất cả" : count}
             </button>
           ))}
         </div>
       </div>
 
       {/* Category & Search */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto">
           {cats.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setCat(item)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-1.5 text-xs font-extrabold transition",
-                cat === item
-                  ? "bg-gradient-to-r from-gold to-amber-500 text-ink shadow-sm"
-                  : "bg-stage-2 text-muted hover:text-white",
+                "shrink-0 rounded-lg px-3 py-1 text-xs font-bold",
+                cat === item ? "bg-stage-soft text-gold" : "text-muted hover:text-white",
               )}
             >
               {item}
             </button>
           ))}
         </div>
-
-        <div className="relative min-w-64 flex-1 sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
-            placeholder="Tìm tên bộ đề..."
-            className="w-full rounded-xl border border-white/15 bg-stage-2 pl-10 pr-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-gold"
-          />
-        </div>
+        <input
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+          placeholder="Tìm tên đề..."
+          className="w-full rounded-control bg-stage-2 px-3.5 py-2 text-sm text-white outline-none ring-1 ring-line focus:ring-gold sm:w-64"
+        />
       </div>
 
-      {/* Quiz Grid (Quizizz Card Style) */}
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((quiz, idx) => {
-          const bannerGrad = CARD_COLORS[idx % CARD_COLORS.length];
-          const recordScore = bestScore(records, quiz.id, mode);
-          return (
-            <article
-              key={quiz.id}
-              className="sheet flex flex-col justify-between overflow-hidden transition-transform hover:-translate-y-1"
-            >
-              <div>
-                <div className={cn("bg-gradient-to-r p-4 text-white", bannerGrad)}>
-                  <div className="flex items-center justify-between gap-2 text-xs font-extrabold uppercase tracking-wider">
-                    <span className="rounded-full bg-black/25 px-2.5 py-0.5">{quiz.category}</span>
-                    <span>{DIFFICULTY_LABEL[quiz.difficulty]}</span>
-                  </div>
-                  <h2 className="mt-3 font-serif text-2xl font-black leading-snug">
-                    {quiz.title}
-                  </h2>
-                </div>
-
-                <div className="p-5">
-                  <p className="line-clamp-2 text-sm text-ink-soft">{quiz.description}</p>
-                  <div className="mt-4 flex items-center justify-between text-xs font-extrabold text-ink">
-                    <span className="rounded-lg bg-paper-2 px-2.5 py-1">
-                      📋 {quiz.questions.length} câu hỏi
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-700">
-                      <Trophy className="size-3.5" /> Kỷ lục: {formatScore(recordScore)}
-                    </span>
-                  </div>
-                </div>
+      {/* Clean Grid */}
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {shown.map((quiz, idx) => (
+          <article
+            key={quiz.id}
+            className={cn("sheet flex flex-col justify-between border-t-6 p-5", ACCENTS[idx % ACCENTS.length])}
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-ink-soft">
+                <span className="text-stamp">{quiz.category}</span>
+                <span>{DIFFICULTY_LABEL[quiz.difficulty]}</span>
               </div>
+              <h2 className="mt-1.5 font-serif text-xl font-extrabold text-ink">{quiz.title}</h2>
+              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-ink-soft">{quiz.description}</p>
+            </div>
 
-              <div className="flex items-center gap-2 border-t border-ink/10 bg-paper-2/60 p-4">
+            <div className="mt-4 border-t border-ink/10 pt-3">
+              <div className="mb-3 flex items-center justify-between text-xs font-semibold text-ink-soft">
+                <span>{quiz.questions.length} câu</span>
+                <span>Kỷ lục: {formatScore(bestScore(records, quiz.id, mode))}</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => launch(quiz.id, mode, customCount ?? undefined)}
-                  className="btn-3d kahoot-3 flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white"
+                  className="tile-btn kahoot-3 min-h-10 flex-1 rounded-lg px-3 text-xs font-extrabold text-white"
                 >
-                  <Play className="size-4 fill-white" />
-                  <span>CHƠI NGAY {customCount && customCount < quiz.questions.length ? `(${customCount} CÂU)` : ""}</span>
+                  Chơi {customCount && customCount < quiz.questions.length ? `(${customCount} câu)` : ""}
                 </button>
                 {!quiz.builtin && (
                   <>
                     <Link
                       to="/studio"
                       search={{ id: quiz.id }}
-                      className="grid size-11 place-items-center rounded-xl bg-white text-ink hover:bg-ink/10 border border-ink/10"
-                      title="Chỉnh sửa"
+                      className="grid min-h-10 place-items-center rounded-lg bg-paper-2 px-3 text-xs font-bold text-ink"
                     >
-                      <Edit3 className="size-4" />
+                      Sửa
                     </Link>
                     <button
                       type="button"
                       onClick={() => deleteQuiz(quiz.id)}
-                      className="grid size-11 place-items-center rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200"
-                      title="Xóa đề"
+                      className="grid min-h-10 place-items-center rounded-lg bg-paper-2 px-3 text-xs font-bold text-stamp"
                     >
-                      <Trash2 className="size-4" />
+                      Xóa
                     </button>
                   </>
                 )}
               </div>
-            </article>
-          );
-        })}
+            </div>
+          </article>
+        ))}
       </div>
 
-      {shown.length === 0 && (
-        <div className="glass-card mt-8 p-10 text-center">
-          <p className="text-lg font-bold text-muted">Không tìm thấy bộ đề nào khớp với từ khóa.</p>
-        </div>
-      )}
+      {shown.length === 0 && <p className="mt-6 text-sm text-muted">Không có đề khớp.</p>}
     </Shell>
   );
 }

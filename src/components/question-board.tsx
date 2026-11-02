@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { letter, present } from "@/game/engine";
 import type { Outcome, Payload, Question } from "@/game/types";
 import { cn } from "@/lib/cn";
-import { Mark } from "@/components/marks";
+import { ChoiceGlyph, Mark } from "@/components/marks";
 
 export interface Verdict {
   outcome: Outcome;
   picked: string[];
   solution: string[];
 }
-
-const KAHOOT_SHAPES = ["▲", "◆", "●", "■", "★", "✦"];
 
 export function QuestionBoard({
   question,
@@ -103,36 +100,32 @@ export function QuestionBoard({
     return (
       <div>
         {multi && !verdict && (
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-ink/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-ink-soft">
-            ✨ Chọn mọi đáp án đúng, rồi bấm Chốt!
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-soft">
+            Chọn tất cả đáp án đúng, rồi bấm Chốt
           </p>
         )}
-        <div className="grid gap-3.5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {view.choices.map((choice, index) => {
             const isEliminated = !verdict && eliminatedIds.includes(choice.id);
             const state = isEliminated ? "dim" : tone(choice.id, picked.includes(choice.id));
-            const shape = KAHOOT_SHAPES[index % KAHOOT_SHAPES.length];
             return (
               <button
                 key={choice.id}
                 type="button"
                 disabled={disabled || isEliminated}
                 onClick={() => choose(choice.id)}
-                className={cn(kahootChoiceClass(index, state), isEliminated && "line-through pointer-events-none opacity-25")}
+                className={cn(
+                  kahootChoiceClass(index, state),
+                  isEliminated && "line-through pointer-events-none opacity-25",
+                )}
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-black/20 text-lg font-black text-white shadow-inner">
-                  {state === "good" ? (
-                    <Check className="size-6 stroke-[3]" />
-                  ) : state === "bad" ? (
-                    <X className="size-6 stroke-[3]" />
-                  ) : (
-                    shape
-                  )}
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-black/20 text-white">
+                  <ChoiceGlyph index={index} state={state} className="size-4" />
                 </span>
-                <span className="flex-1 text-left text-base font-bold leading-snug sm:text-lg">
+                <span className="flex-1 text-left text-base font-semibold leading-snug">
                   {choice.text}
                 </span>
-                <span className="hidden rounded-md bg-black/15 px-2 py-0.5 text-xs font-bold uppercase opacity-80 sm:inline-block">
+                <span className="hidden rounded bg-black/15 px-1.5 py-0.5 text-xs font-bold opacity-75 sm:inline-block">
                   {letter(index)}
                 </span>
               </button>
@@ -141,7 +134,7 @@ export function QuestionBoard({
         </div>
         {multi && !verdict && (
           <Commit disabled={disabled || picked.length === 0} onClick={() => send({ type: "ids", ids: picked })}>
-            🚀 Chốt đáp án ({picked.length})
+            Chốt đáp án ({picked.length})
           </Commit>
         )}
       </div>
@@ -150,7 +143,7 @@ export function QuestionBoard({
 
   if (question.type === "image") {
     return (
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-2 gap-3">
         {view.choices.map((choice, index) => {
           const state = tone(choice.id, picked.includes(choice.id));
           return (
@@ -159,10 +152,10 @@ export function QuestionBoard({
               type="button"
               disabled={disabled}
               onClick={() => choose(choice.id)}
-              className={cn(kahootChoiceClass(index, state), "min-h-36 flex-col justify-center text-center")}
+              className={cn(kahootChoiceClass(index, state), "min-h-32 flex-col justify-center text-center")}
             >
-              <Mark name={choice.mark ?? "seal"} className="size-14" />
-              <span className="font-bold">{choice.text}</span>
+              <Mark name={choice.mark ?? "seal"} className="size-12" />
+              <span className="font-semibold">{choice.text}</span>
             </button>
           );
         })}
@@ -172,11 +165,11 @@ export function QuestionBoard({
 
   if (question.type === "tf") {
     const options = [
-      { id: "true", label: "ĐÚNG", sub: "Chính xác", value: true, colorIdx: 1, icon: "◆" },
-      { id: "false", label: "SAI", sub: "Không đúng", value: false, colorIdx: 0, icon: "▲" },
+      { id: "true", label: "Đúng", value: true, colorIdx: 1 },
+      { id: "false", label: "Sai", value: false, colorIdx: 0 },
     ];
     return (
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3.5">
         {options.map((option) => {
           const state = tone(option.id, false);
           return (
@@ -187,14 +180,13 @@ export function QuestionBoard({
               onClick={() => send({ type: "bool", value: option.value })}
               className={cn(
                 kahootChoiceClass(option.colorIdx, state),
-                "min-h-32 flex-col justify-center gap-2 text-center",
+                "min-h-24 justify-center gap-3 text-center text-xl font-bold",
               )}
             >
-              <span className="grid size-12 place-items-center rounded-2xl bg-black/20 text-2xl font-black">
-                {state === "good" ? <Check className="size-7 stroke-[3]" /> : state === "bad" ? <X className="size-7 stroke-[3]" /> : option.icon}
+              <span className="grid size-9 place-items-center rounded-lg bg-black/20">
+                <ChoiceGlyph index={option.colorIdx} state={state} className="size-4" />
               </span>
-              <span className="text-2xl font-black tracking-wide">{option.label}</span>
-              <span className="text-xs font-medium opacity-80">{option.sub}</span>
+              <span>{option.label}</span>
             </button>
           );
         })}
@@ -214,11 +206,11 @@ export function QuestionBoard({
           value={text}
           disabled={disabled}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Nhập câu trả lời của bạn vào đây..."
-          className="w-full rounded-control border-2 border-ink/15 bg-paper-2 px-4 py-3.5 text-lg font-bold text-ink outline-none transition focus:border-stamp focus:bg-white"
+          placeholder="Gõ đáp án..."
+          className="w-full rounded-control border border-ink/15 bg-paper-2 px-4 py-3 text-lg font-semibold text-ink outline-none focus:border-ink"
           autoComplete="off"
         />
-        <Commit disabled={disabled || !text.trim()}>🚀 Chốt đáp án</Commit>
+        <Commit disabled={disabled || !text.trim()}>Chốt đáp án</Commit>
       </form>
     );
   }
@@ -236,8 +228,8 @@ export function QuestionBoard({
     }
     return (
       <div>
-        <p className="mb-3 text-sm font-semibold text-ink-soft">Sắp xếp theo thứ tự đúng từ trên xuống:</p>
-        <ol className="grid gap-2.5">
+        <p className="mb-2.5 text-xs font-semibold text-ink-soft">Sắp xếp theo thứ tự từ trên xuống:</p>
+        <ol className="grid gap-2">
           {order.map((id, index) => {
             const good = verdict ? verdict.solution[index] === id : false;
             const bad = verdict ? !good : false;
@@ -252,32 +244,32 @@ export function QuestionBoard({
                   setDrag(null);
                 }}
                 className={cn(
-                  "flex items-center gap-3 rounded-control border-2 border-ink/10 bg-paper-2 px-3 py-2.5 font-semibold shadow-sm",
-                  good && "border-mint bg-mint/20 text-ink",
-                  bad && "border-stamp bg-stamp text-white",
+                  "flex items-center gap-2.5 rounded-control bg-paper-2 px-3 py-2.5 font-medium",
+                  good && "bg-[#26890c] text-white",
+                  bad && "bg-[#e21b3c] text-white",
                 )}
               >
-                <span className="tabular grid size-8 place-items-center rounded-lg bg-ink text-sm font-bold text-white">
+                <span className="tabular grid size-7 place-items-center rounded bg-ink/10 text-xs font-bold">
                   {index + 1}
                 </span>
                 <span className="flex-1 text-base">{byId.get(id) ?? original.get(id)}</span>
                 <button
                   type="button"
-                  className="grid size-10 place-items-center rounded-lg bg-black/5 hover:bg-black/10"
+                  className="grid size-9 place-items-center rounded bg-black/5 hover:bg-black/10"
                   disabled={disabled || index === 0}
                   onClick={() => move(index, index - 1)}
-                  aria-label="Đưa lên"
+                  aria-label="Lên"
                 >
-                  <ChevronUp className="size-5" />
+                  ↑
                 </button>
                 <button
                   type="button"
-                  className="grid size-10 place-items-center rounded-lg bg-black/5 hover:bg-black/10"
+                  className="grid size-9 place-items-center rounded bg-black/5 hover:bg-black/10"
                   disabled={disabled || index >= order.length - 1}
                   onClick={() => move(index, index + 1)}
-                  aria-label="Đưa xuống"
+                  aria-label="Xuống"
                 >
-                  <ChevronDown className="size-5" />
+                  ↓
                 </button>
               </li>
             );
@@ -285,7 +277,7 @@ export function QuestionBoard({
         </ol>
         {!verdict && (
           <Commit disabled={disabled} onClick={() => send({ type: "order", ids: order })}>
-            🚀 Chốt thứ tự
+            Chốt thứ tự
           </Commit>
         )}
       </div>
@@ -299,9 +291,9 @@ export function QuestionBoard({
     };
     return (
       <div>
-        <p className="mb-3 text-sm font-semibold text-ink-soft">Chọn cột trái, rồi ghép với ý tương ứng ở cột phải:</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2.5">
+        <p className="mb-2.5 text-xs font-semibold text-ink-soft">Chọn cột trái rồi ghép với cột phải:</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
             {view.left.map((item) => {
               const linked = pairs[item.id];
               return (
@@ -322,12 +314,12 @@ export function QuestionBoard({
                     setActiveLeft(item.id);
                   }}
                   className={cn(
-                    "min-h-12 rounded-control border-2 border-ink/10 px-3.5 py-3 text-left font-semibold transition",
+                    "min-h-12 rounded-control px-3 py-2.5 text-left font-medium transition",
                     activeLeft === item.id
-                      ? "border-gold bg-gold text-gold-ink scale-[1.02]"
+                      ? "bg-gold text-gold-ink"
                       : linked
                         ? chip(item.id)
-                        : "bg-paper-2 text-ink hover:bg-white",
+                        : "bg-paper-2 text-ink",
                   )}
                 >
                   {item.text}
@@ -335,7 +327,7 @@ export function QuestionBoard({
               );
             })}
           </div>
-          <div className="grid gap-2.5">
+          <div className="grid gap-2">
             {view.right.map((item) => {
               const owner = Object.entries(pairs).find(([, right]) => right === item.id)?.[0];
               return (
@@ -356,7 +348,7 @@ export function QuestionBoard({
                     setActiveLeft(null);
                   }}
                   className={cn(
-                    "min-h-12 rounded-control border-2 border-ink/10 px-3.5 py-3 text-left font-semibold transition",
+                    "min-h-12 rounded-control px-3 py-2.5 text-left font-medium transition",
                     owner ? chip(owner) : "bg-paper-2 text-ink",
                   )}
                 >
@@ -376,7 +368,7 @@ export function QuestionBoard({
               })
             }
           >
-            🚀 Chốt các cặp
+            Chốt các cặp
           </Commit>
         )}
       </div>
@@ -388,7 +380,7 @@ export function QuestionBoard({
     const loose = view.items.filter((item) => !placement[item.id]);
     return (
       <div>
-        <p className="mb-3 text-sm font-semibold text-ink-soft">Chọn một thẻ, rồi thả vào đúng nhóm:</p>
+        <p className="mb-2.5 text-xs font-semibold text-ink-soft">Chọn thẻ rồi xếp vào nhóm:</p>
         <div className="mb-3 flex flex-wrap gap-2">
           {loose.map((item) => (
             <button
@@ -397,20 +389,19 @@ export function QuestionBoard({
               disabled={disabled}
               onClick={() => setActiveItem(item.id)}
               className={cn(
-                "min-h-11 rounded-control px-3.5 py-2 font-semibold transition",
-                activeItem === item.id ? "bg-gold text-gold-ink ring-2 ring-ink" : "bg-paper-2 text-ink",
+                "min-h-10 rounded-control px-3 py-1.5 text-sm font-semibold",
+                activeItem === item.id ? "bg-gold text-gold-ink" : "bg-paper-2 text-ink",
               )}
             >
               {item.text}
             </button>
           ))}
-          {loose.length === 0 && <p className="text-sm font-semibold text-ink-soft">Đã xếp hết thẻ!</p>}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {bins.map((bin) => {
             const inside = view.items.filter((item) => placement[item.id] === bin.id);
             return (
-              <div key={bin.id} className="min-h-28 rounded-control border-2 border-dashed border-ink/20 bg-paper-2 p-3.5 text-left">
+              <div key={bin.id} className="min-h-24 rounded-control bg-paper-2 p-3 text-left">
                 <button
                   type="button"
                   disabled={disabled || !activeItem}
@@ -419,11 +410,11 @@ export function QuestionBoard({
                     setPlacement((curr) => ({ ...curr, [activeItem]: bin.id }));
                     setActiveItem(null);
                   }}
-                  className="text-sm font-bold uppercase tracking-wider text-stamp disabled:opacity-70"
+                  className="text-xs font-bold uppercase tracking-wider text-stamp disabled:opacity-70"
                 >
-                  📂 {bin.label}
+                  {bin.label}
                 </button>
-                <span className="mt-2 flex flex-wrap gap-2">
+                <span className="mt-2 flex flex-wrap gap-1.5">
                   {inside.map((item) => (
                     <button
                       key={item.id}
@@ -436,9 +427,9 @@ export function QuestionBoard({
                           return next;
                         })
                       }
-                      className="rounded-lg bg-ink px-2.5 py-1.5 text-sm font-semibold text-paper"
+                      className="rounded bg-ink px-2 py-1 text-xs font-semibold text-paper"
                     >
-                      {item.text} ✕
+                      {item.text}
                     </button>
                   ))}
                 </span>
@@ -448,7 +439,7 @@ export function QuestionBoard({
         </div>
         {!verdict && (
           <Commit disabled={disabled || loose.length > 0} onClick={() => send({ type: "bins", placement })}>
-            🚀 Chốt các nhóm
+            Chốt các nhóm
           </Commit>
         )}
       </div>
@@ -466,7 +457,7 @@ export function QuestionBoard({
             onClick={() => send({ type: "hotspot", id: spot.id })}
             style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.w}%`, height: `${spot.h}%` }}
             className={cn(
-              "absolute grid place-items-center rounded-control px-2 text-center text-sm font-bold shadow-md",
+              "absolute grid place-items-center rounded-control px-2 text-center text-sm font-bold",
               kahootChoiceClass(idx, tone(spot.id, false)),
             )}
           >
@@ -483,36 +474,27 @@ export function QuestionBoard({
         value={essay}
         disabled={disabled}
         onChange={(event) => setEssay(event.target.value)}
-        rows={5}
-        placeholder="Viết ý chính của bạn..."
-        className="w-full resize-y rounded-control border-2 border-ink/15 bg-paper-2 px-4 py-3 text-base font-medium text-ink outline-none focus:border-gold"
+        rows={4}
+        placeholder="Viết ý chính..."
+        className="w-full resize-y rounded-control bg-paper-2 px-4 py-3 text-base text-ink outline-none"
       />
-      {verdict && (
-        <ul className="mt-3 grid gap-2 text-sm leading-relaxed">
-          {(question.rubric ?? []).map((line) => (
-            <li key={line} className="rounded-control bg-paper-2 px-3 py-2 font-medium">
-              • {line}
-            </li>
-          ))}
-        </ul>
-      )}
       {!verdict && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
-            disabled={disabled || essay.trim().length < 10}
+            disabled={disabled || essay.trim().length < 5}
             onClick={() => send({ type: "rubric", accept: true, text: essay })}
-            className="btn-3d kahoot-3 min-h-12 rounded-control px-4 py-3 font-bold text-white disabled:opacity-40"
+            className="tile-btn kahoot-3 min-h-11 rounded-control px-4 py-2.5 font-bold text-white disabled:opacity-40"
           >
-            ✓ Mình làm tốt
+            Đạt
           </button>
           <button
             type="button"
             disabled={disabled}
             onClick={() => send({ type: "rubric", accept: false, text: essay })}
-            className="btn-3d kahoot-0 min-h-12 rounded-control px-4 py-3 font-bold text-white"
+            className="tile-btn kahoot-0 min-h-11 rounded-control px-4 py-2.5 font-bold text-white"
           >
-            ✕ Cần ôn thêm
+            Chưa đạt
           </button>
         </div>
       )}
@@ -521,19 +503,19 @@ export function QuestionBoard({
 }
 
 const PAIR = [
-  "bg-[#e21b3c] text-white border-[#9e0e26]",
-  "bg-[#1368ce] text-white border-[#0b458c]",
-  "bg-[#d89e00] text-white border-[#966c00]",
-  "bg-[#26890c] text-white border-[#175906]",
+  "bg-[#e21b3c] text-white",
+  "bg-[#1368ce] text-white",
+  "bg-[#d89e00] text-white",
+  "bg-[#26890c] text-white",
 ];
 
 function kahootChoiceClass(index: number, state: "idle" | "picked" | "good" | "bad" | "dim") {
   const colorClass = `kahoot-${index % 4}`;
   return cn(
-    "btn-3d flex w-full items-center gap-3.5 rounded-2xl px-4 py-4 text-left min-h-[4.25rem]",
+    "tile-btn flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left min-h-15",
     colorClass,
-    state === "picked" && "ring-4 ring-white scale-[1.02]",
-    state === "good" && "kahoot-good scale-[1.02] ring-4 ring-white",
+    state === "picked" && "ring-3 ring-white",
+    state === "good" && "kahoot-good ring-3 ring-white",
     state === "bad" && "kahoot-bad",
     state === "dim" && "kahoot-dim",
   );
@@ -553,7 +535,7 @@ function Commit({
       type="submit"
       disabled={disabled}
       onClick={onClick}
-      className="btn-3d mt-5 min-h-13 w-full rounded-2xl bg-gradient-to-r from-[#ff3355] to-[#ff6b00] px-5 py-3.5 text-lg font-extrabold text-white shadow-lg disabled:opacity-40"
+      className="tile-btn mt-4 min-h-12 w-full rounded-xl bg-ink px-4 py-3 font-bold text-white disabled:opacity-40"
     >
       {children}
     </button>

@@ -1,11 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Flame, Gamepad2, History, Library, PenTool, Settings, Trophy, Volume2, VolumeX, X, Zap } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
+import { DauIcon } from "@/components/marks";
 import { useGame } from "@/game/store";
 import { unlockAudio } from "@/game/sound";
 import { cn } from "@/lib/cn";
-import { formatScore } from "@/game/engine";
 
 export function Boot() {
   const hydrate = useGame((s) => s.hydrate);
@@ -22,42 +21,6 @@ export function Boot() {
   return null;
 }
 
-export function usePlayerRank() {
-  const records = useGame((s) => s.records);
-  return useMemo(() => {
-    const totalXP = records.reduce((sum, r) => sum + r.score, 0);
-    const totalCorrect = records.reduce((sum, r) => sum + r.correct, 0);
-    const bestStreak = records.reduce((m, r) => Math.max(m, r.bestStreak), 0);
-    const level = Math.max(1, Math.floor(totalXP / 5000) + 1);
-    const currentLevelXP = totalXP % 5000;
-    const progressPct = Math.min(100, Math.round((currentLevelXP / 5000) * 100));
-
-    let badge = "Tân Binh";
-    let badgeColor = "from-blue-400 to-cyan-400";
-    if (level >= 15) {
-      badge = "Huyền Thoại GDCD";
-      badgeColor = "from-amber-300 via-yellow-400 to-orange-500";
-    } else if (level >= 8) {
-      badge = "Cao Thủ Đấu Trường";
-      badgeColor = "from-pink-500 via-red-500 to-yellow-500";
-    } else if (level >= 4) {
-      badge = "Chiến Binh Tri Thức";
-      badgeColor = "from-purple-400 to-pink-500";
-    }
-
-    return {
-      totalXP,
-      totalCorrect,
-      bestStreak,
-      level,
-      progressPct,
-      badge,
-      badgeColor,
-      gamesPlayed: records.length,
-    };
-  }, [records]);
-}
-
 export function Shell({
   children,
   wide,
@@ -70,57 +33,22 @@ export function Shell({
   const path = useRouterState({ select: (s) => s.location.pathname });
   const notice = useGame((s) => s.notice);
   const clearNotice = useGame((s) => s.clearNotice);
-  const rank = usePlayerRank();
 
   return (
     <div className="min-h-screen text-paper">
       {!bare && (
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#12092b]/85 backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-            <Link to="/" className="mr-auto flex items-center gap-3 group">
-              <Seal className="transition-transform group-hover:scale-105" />
-              <div>
-                <span className="block font-serif text-2xl font-black tracking-tight text-white">
-                  DẤU <span className="text-gold">ARENA</span>
-                </span>
-                <span className="block text-[10px] font-bold uppercase tracking-widest text-muted">
-                  Quizizz & Kahoot Edition
-                </span>
-              </div>
+        <header className="border-b border-line bg-stage-2/80">
+          <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+            <Link to="/" className="mr-auto flex items-center gap-2.5">
+              <Seal />
+              <span className="font-serif text-xl font-extrabold tracking-tight text-white">DẤU</span>
             </Link>
 
-            {/* Gamified XP & Level Pill */}
-            <div className="hidden items-center gap-2.5 rounded-2xl border border-white/15 bg-stage-2/90 px-3.5 py-1.5 md:flex">
-              <div className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-gold to-orange-500 font-black text-gold-ink shadow-sm">
-                {rank.level}
-              </div>
-              <div className="min-w-28">
-                <div className="flex items-center justify-between gap-2 text-xs font-bold">
-                  <span className={cn("bg-gradient-to-r bg-clip-text text-transparent", rank.badgeColor)}>
-                    {rank.badge}
-                  </span>
-                  <span className="tabular text-[11px] text-gold">{formatScore(rank.totalXP)} XP</span>
-                </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-gold to-stamp transition-all duration-500"
-                    style={{ width: `${rank.progressPct}%` }}
-                  />
-                </div>
-              </div>
-              {rank.bestStreak > 0 && (
-                <div className="ml-1 flex items-center gap-1 rounded-lg bg-orange-500/20 px-2 py-1 text-xs font-extrabold text-orange-400" title="Chuỗi đúng cao nhất">
-                  <Flame className="size-3.5 fill-orange-400" />
-                  <span className="tabular">{rank.bestStreak}</span>
-                </div>
-              )}
-            </div>
-
-            <nav className="hidden items-center gap-1.5 sm:flex">
-              <NavPill to="/" active={path === "/"} icon={<Gamepad2 className="size-4" />} label="Sảnh Chơi" />
-              <NavPill to="/library" active={path === "/library"} icon={<Library className="size-4" />} label="Kho Đề" />
-              <NavPill to="/studio" active={path === "/studio"} icon={<PenTool className="size-4" />} label="Tạo Đề" search={{ id: "" }} />
-              <NavPill to="/history" active={path === "/history"} icon={<History className="size-4" />} label="Kỷ Lục" />
+            <nav className="hidden items-center gap-1 sm:flex">
+              <NavTab to="/" active={path === "/"} label="Chơi" />
+              <NavTab to="/library" active={path === "/library"} label="Tủ đề" />
+              <NavTab to="/studio" active={path === "/studio"} label="Soạn" search={{ id: "" }} />
+              <NavTab to="/history" active={path === "/history"} label="Lịch sử" />
             </nav>
 
             <SoundButton />
@@ -129,38 +57,36 @@ export function Shell({
         </header>
       )}
       {!bare && (
-        <nav className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2.5 sm:hidden">
-          <NavPill to="/" active={path === "/"} icon={<Gamepad2 className="size-4" />} label="Sảnh Chơi" />
-          <NavPill to="/library" active={path === "/library"} icon={<Library className="size-4" />} label="Kho Đề" />
-          <NavPill to="/studio" active={path === "/studio"} icon={<PenTool className="size-4" />} label="Tạo Đề" search={{ id: "" }} />
-          <NavPill to="/history" active={path === "/history"} icon={<History className="size-4" />} label="Kỷ Lục" />
+        <nav className="mx-auto flex max-w-5xl gap-1.5 overflow-x-auto px-4 py-2 sm:hidden">
+          <NavTab to="/" active={path === "/"} label="Chơi" />
+          <NavTab to="/library" active={path === "/library"} label="Tủ đề" />
+          <NavTab to="/studio" active={path === "/studio"} label="Soạn" search={{ id: "" }} />
+          <NavTab to="/history" active={path === "/history"} label="Lịch sử" />
         </nav>
       )}
       {notice && !bare && (
-        <div className="mx-auto mt-3 flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-gold/30 bg-gold/15 px-4 py-2.5 text-sm font-semibold text-gold">
-          <p>⚡ {notice}</p>
-          <button type="button" onClick={clearNotice} className="shrink-0 rounded-lg bg-gold/20 px-2.5 py-1 text-xs font-bold hover:bg-gold/30">
+        <div className="mx-auto mt-3 flex max-w-5xl items-center justify-between gap-3 rounded-control bg-stage-soft px-4 py-2.5 text-sm text-gold">
+          <p>{notice}</p>
+          <button type="button" onClick={clearNotice} className="shrink-0 text-xs font-semibold underline">
             Đóng
           </button>
         </div>
       )}
-      <main className={cn("mx-auto px-4 pb-24 pt-6", wide ? "max-w-6xl" : "max-w-3xl", bare && "max-w-4xl pt-4")}>
+      <main className={cn("mx-auto px-4 pb-20 pt-6", wide ? "max-w-5xl" : "max-w-3xl", bare && "max-w-3xl pt-4")}>
         {children}
       </main>
     </div>
   );
 }
 
-function NavPill({
+function NavTab({
   to,
   active,
-  icon,
   label,
   search,
 }: {
   to: "/" | "/library" | "/studio" | "/history";
   active: boolean;
-  icon: React.ReactNode;
   label: string;
   search?: { id: string };
 }) {
@@ -169,14 +95,11 @@ function NavPill({
       to={to}
       search={search}
       className={cn(
-        "flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition-all",
-        active
-          ? "bg-gradient-to-r from-[#ff3355] to-[#ff6b00] text-white shadow-md shadow-[#ff3355]/25"
-          : "bg-stage-soft/70 text-muted hover:bg-stage-soft hover:text-white",
+        "shrink-0 rounded-control px-3.5 py-1.5 text-sm font-semibold transition-colors",
+        active ? "bg-paper text-ink" : "text-muted hover:bg-stage-soft hover:text-white",
       )}
     >
-      {icon}
-      <span>{label}</span>
+      {label}
     </Link>
   );
 }
@@ -185,12 +108,15 @@ export function Seal({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#ff3355] via-[#ff6b00] to-[#ffc800] text-xs font-black tracking-wider text-white shadow-lg shadow-[#ff3355]/30",
+        "grid size-9 place-items-center rounded-xl bg-stamp text-xs font-extrabold text-white",
         className,
       )}
       aria-hidden="true"
     >
-      <Zap className="size-6 fill-white" />
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3 4 9v11h16V9l-8-6Z" />
+        <path d="m9.5 14 2 2 4-4" />
+      </svg>
     </span>
   );
 }
@@ -207,11 +133,11 @@ function SoundButton() {
         setSettings({ sound: !sound });
       }}
       className={cn(
-        "grid size-10 place-items-center rounded-xl border border-white/10 transition",
-        sound ? "bg-stage-soft text-gold" : "bg-stage-2 text-muted",
+        "grid size-9 place-items-center rounded-control transition",
+        sound ? "bg-stage-soft text-white" : "bg-stage-2 text-muted",
       )}
     >
-      {sound ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+      <DauIcon name={sound ? "sound-on" : "sound-off"} className="size-4" />
     </button>
   );
 }
@@ -221,57 +147,48 @@ function SettingsDialog() {
   const setSettings = useGame((s) => s.setSettings);
   return (
     <Dialog.Root>
-      <Dialog.Trigger className="grid size-10 place-items-center rounded-xl border border-white/10 bg-stage-soft text-paper hover:bg-white/15" aria-label="Cài đặt">
-        <Settings className="size-5" />
+      <Dialog.Trigger className="grid size-9 place-items-center rounded-control bg-stage-soft text-white" aria-label="Cài đặt">
+        <DauIcon name="settings" className="size-4" />
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs" />
-        <Dialog.Content className="sheet fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 p-6">
-          <div className="flex items-start justify-between gap-3">
-            <Dialog.Title className="font-serif text-2xl font-black text-ink">⚙️ Cài đặt phòng thi</Dialog.Title>
-            <Dialog.Close className="grid size-10 place-items-center rounded-xl bg-paper-2 text-ink hover:bg-black/10" aria-label="Đóng">
-              <X className="size-5" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60" />
+        <Dialog.Content className="sheet fixed left-1/2 top-1/2 z-50 w-[min(92vw,26rem)] -translate-x-1/2 -translate-y-1/2 p-6">
+          <div className="flex items-center justify-between gap-3">
+            <Dialog.Title className="font-serif text-xl font-bold text-ink">Cài đặt</Dialog.Title>
+            <Dialog.Close className="grid size-9 place-items-center rounded-control bg-paper-2 text-ink" aria-label="Đóng">
+              <DauIcon name="close" className="size-4" />
             </Dialog.Close>
           </div>
-          <Dialog.Description className="mt-1 text-sm text-ink-soft">
-            Tuỳ chỉnh hiệu ứng âm thanh, trợ giúp và chuyển động.
+          <Dialog.Description className="mt-1 text-xs text-ink-soft">
+            Âm thanh và chuyển động trên thiết bị này.
           </Dialog.Description>
-          <label className="mt-6 flex items-center justify-between gap-3 font-semibold text-ink">
-            <span>🔊 Hiệu ứng âm thanh Arcade</span>
+          <label className="mt-5 flex items-center justify-between gap-3 text-sm font-medium text-ink">
+            <span>Âm thanh khi chơi</span>
             <input
               type="checkbox"
               checked={settings.sound}
               onChange={(event) => setSettings({ sound: event.target.checked })}
-              className="size-5 accent-stamp"
+              className="size-4 accent-stamp"
             />
           </label>
-          <label className="mt-4 block text-sm font-semibold text-ink-soft">
-            Mức âm lượng ({Math.round(settings.volume * 100)}%)
+          <label className="mt-4 block text-xs font-medium text-ink-soft">
+            Âm lượng ({Math.round(settings.volume * 100)}%)
             <input
               type="range"
               min={0}
               max={100}
               value={Math.round(settings.volume * 100)}
               onChange={(event) => setSettings({ volume: Number(event.target.value) / 100 })}
-              className="mt-2 w-full accent-stamp"
+              className="mt-1.5 w-full accent-stamp"
             />
           </label>
-          <label className="mt-4 flex items-center justify-between gap-3 font-semibold text-ink">
-            <span>💡 Dùng gợi ý trừ 20% điểm câu</span>
-            <input
-              type="checkbox"
-              checked={settings.hintPenalty}
-              onChange={(event) => setSettings({ hintPenalty: event.target.checked })}
-              className="size-5 accent-stamp"
-            />
-          </label>
-          <label className="mt-4 flex items-center justify-between gap-3 font-semibold text-ink">
-            <span>🐢 Giảm hiệu ứng chuyển động</span>
+          <label className="mt-4 flex items-center justify-between gap-3 text-sm font-medium text-ink">
+            <span>Giảm chuyển động</span>
             <input
               type="checkbox"
               checked={settings.reducedMotion}
               onChange={(event) => setSettings({ reducedMotion: event.target.checked })}
-              className="size-5 accent-stamp"
+              className="size-4 accent-stamp"
             />
           </label>
         </Dialog.Content>
@@ -279,4 +196,3 @@ function SettingsDialog() {
     </Dialog.Root>
   );
 }
-export { Trophy };
