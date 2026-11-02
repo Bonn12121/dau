@@ -53,10 +53,21 @@ function questionById(quiz: Quiz, id: string) {
   return quiz.questions.find((q) => q.id === id);
 }
 
-function orderFor(quiz: Quiz, mode: Mode) {
-  const ids = poolFor(quiz, mode);
-  if (mode === "classic") return ids;
-  return shuffle(ids, rng);
+function orderFor(quiz: Quiz, mode: Mode, limit?: number) {
+  let ids = poolFor(quiz, mode);
+  if (mode !== "classic") {
+    ids = shuffle(ids, rng);
+  }
+  if (limit && limit > 0 && limit < ids.length) {
+    if (mode === "classic") {
+      // In classic mode, limit can either take the first N questions or a random sample
+      // taking slice(0, limit) preserves test structure order
+      ids = ids.slice(0, limit);
+    } else {
+      ids = ids.slice(0, limit);
+    }
+  }
+  return ids;
 }
 
 function enter(session: Session, index: number, lap: number): Session {
@@ -86,7 +97,13 @@ function finish(session: Session, records: RunRecord[]): { session: Session; rec
   const prevBest = records
     .filter((r) => r.quizId === session.quiz.id && r.mode === session.mode)
     .reduce((m, r) => Math.max(m, r.score), 0);
-  const finishedAll = session.mode === "classic" && session.logs.length >= session.quiz.questions.length;
+  const finishedAll =
+    session.mode === "classic" &&
+    session.logs.length >= (session.questionLimit ?? session.quiz.questions.length);
+  const maxPossibleExam = session.order.reduce((sum, qId) => {
+    const q = questionById(session.quiz, qId);
+    return sum + (q?.examWeight ?? 0);
+  }, 0);
   const record: RunRecord = {
     id: uid("run"),
     quizId: session.quiz.id,
@@ -95,7 +112,7 @@ function finish(session: Session, records: RunRecord[]): { session: Session; rec
     mode: session.mode,
     score: session.score,
     exam: session.exam,
-    examMax: examMax(session.quiz),
+    examMax: maxPossibleExam > 0 ? maxPossibleExam : examMax(session.quiz),
     correct: session.correct,
     wrong: session.wrong,
     polls: session.polls,
@@ -107,6 +124,7 @@ function finish(session: Session, records: RunRecord[]): { session: Session; rec
     logs: session.logs,
     newRecord: session.score > 0 && session.score >= prevBest,
     finishedAll,
+    questionLimit: session.questionLimit,
   };
   const nextRecords = [record, ...records].slice(0, 40);
   return {
@@ -129,7 +147,7 @@ interface State {
   saveQuiz: (quiz: Quiz) => boolean;
   deleteQuiz: (id: string) => void;
   importQuizzes: (quizzes: Quiz[]) => boolean;
-  startRun: (quiz: Quiz, mode: Mode) => void;
+  startRun: (quiz: Quiz, mode: Mode, limit?: number) => void;
   tickCountdown: () => void;
   revealHint: () => void;
   submit: (payload: Payload) => void;
@@ -200,13 +218,15 @@ export const useGame = create<State>((set, get) => ({
     });
     return ok;
   },
-  startRun: (quiz, mode) => {
-    const order = orderFor(quiz, mode);
+  startRun: (quiz, mode, limit) => {
+    const validLimit = limit && limit > 0 && limit < quiz.questions.length ? limit : undefined;
+    const order = orderFor(quiz, mode, validLimit);
     const attackBudget = attackBudgetMs(quiz);
     const base: Session = {
       quiz: structuredClone(quiz),
       mode,
       order,
+      questionLimit: validLimit,
       index: 0,
       lap: 1,
       seen: 0,

@@ -7,6 +7,7 @@ import { allQuizzes } from "@/game/quizzes";
 import { parseBundle } from "@/game/schema";
 import { bestScore, useGame } from "@/game/store";
 import { DIFFICULTY_LABEL, MODES, type Mode } from "@/game/types";
+import { cn } from "@/lib/cn";
 
 export const Route = createFileRoute("/library")({ component: Library });
 
@@ -17,6 +18,7 @@ function Library() {
   const deleteQuiz = useGame((s) => s.deleteQuiz);
   const launch = useLaunch();
   const [mode, setMode] = useState<Mode>("classic");
+  const [customCount, setCustomCount] = useState<number | null>(null);
   const [cat, setCat] = useState("Tất cả");
   const [q, setQ] = useState("");
   const [error, setError] = useState("");
@@ -65,17 +67,37 @@ function Library() {
         </div>
       </div>
       {error && <p className="mt-3 text-sm text-stamp">{error}</p>}
-      <div className="mt-6 flex flex-wrap gap-2">
-        {MODES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setMode(item.id)}
-            className={mode === item.id ? "rounded-control bg-paper px-3 py-2 text-sm text-ink" : "rounded-control bg-stage-soft px-3 py-2 text-sm text-muted"}
-          >
-            {item.name}
-          </button>
-        ))}
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap gap-2">
+          {MODES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setMode(item.id)}
+              className={mode === item.id ? "rounded-control bg-paper px-3 py-2 text-sm text-ink" : "rounded-control bg-stage-soft px-3 py-2 text-sm text-muted"}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted">Số câu:</span>
+          {[null, 5, 10, 15, 20].map((count) => (
+            <button
+              key={count ?? "all"}
+              type="button"
+              onClick={() => setCustomCount(count)}
+              className={cn(
+                "rounded-control px-2.5 py-1.5 transition-colors",
+                customCount === count
+                  ? "bg-gold text-ink font-semibold"
+                  : "bg-stage-soft text-muted hover:text-paper"
+              )}
+            >
+              {count === null ? "Tất cả" : count}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto">
         {cats.map((item) => (
@@ -105,8 +127,12 @@ function Library() {
                 {quiz.questions.length} câu · {DIFFICULTY_LABEL[quiz.difficulty]} · kỷ lục {formatScore(bestScore(records, quiz.id, mode))}
               </p>
             </div>
-            <button type="button" onClick={() => launch(quiz.id, mode)} className="min-h-11 rounded-control bg-paper px-4 text-sm font-semibold text-ink">
-              Chơi
+            <button
+              type="button"
+              onClick={() => launch(quiz.id, mode, customCount ?? undefined)}
+              className="min-h-11 rounded-control bg-paper px-4 text-sm font-semibold text-ink"
+            >
+              Chơi {customCount ? `(${customCount} câu)` : ""}
             </button>
             {!quiz.builtin && (
               <>

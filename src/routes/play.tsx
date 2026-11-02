@@ -13,9 +13,10 @@ function isMode(value: unknown): value is Mode {
 }
 
 export const Route = createFileRoute("/play")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { quiz: string; mode: Mode; limit?: number } => ({
     quiz: typeof search.quiz === "string" ? search.quiz : "gdcd-gk1-2627",
     mode: isMode(search.mode) ? search.mode : "classic",
+    ...(typeof search.limit === "number" ? { limit: search.limit } : {}),
   }),
   component: PlayScreen,
 });
@@ -53,10 +54,17 @@ function PlayScreen() {
   useEffect(() => {
     if (!hydrated || !quiz) return;
     const current = useGame.getState().session;
-    if (current && current.phase !== "done" && current.quiz.id === quiz.id && current.mode === search.mode) return;
+    if (
+      current &&
+      current.phase !== "done" &&
+      current.quiz.id === quiz.id &&
+      current.mode === search.mode &&
+      current.questionLimit === search.limit
+    )
+      return;
     if (current?.phase === "done") return;
-    startRun(quiz, search.mode);
-  }, [hydrated, quiz, search.mode, search.quiz, startRun]);
+    startRun(quiz, search.mode, search.limit);
+  }, [hydrated, quiz, search.mode, search.quiz, search.limit, startRun]);
 
   useEffect(() => {
     if (session?.phase !== "countdown") return;

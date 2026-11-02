@@ -5,10 +5,17 @@ import type { Mode } from "@/game/types";
 
 export function useLaunch() {
   const navigate = useNavigate();
-  return (quizId: string, mode: Mode) => {
+  return (quizId: string, mode: Mode, limit?: number) => {
     const quiz = findQuiz(useGame.getState().custom, quizId);
     if (!quiz) return;
-    useGame.getState().startRun(quiz, mode);
-    void navigate({ to: "/play", search: { quiz: quizId, mode } });
+    useGame.getState().startRun(quiz, mode, limit);
+    void navigate({
+      to: "/play",
+      search: {
+        quiz: quizId,
+        mode,
+        ...(limit && limit > 0 ? { limit } : {}),
+      },
+    });
   };
 }

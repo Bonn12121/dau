@@ -143,6 +143,7 @@ export interface Session {
   quiz: Quiz;
   mode: Mode;
   order: string[];
+  questionLimit?: number;
   index: number;
   lap: number;
   seen: number;
@@ -190,6 +191,7 @@ export interface RunRecord {
   logs: Log[];
   newRecord: boolean;
   finishedAll: boolean;
+  questionLimit?: number;
 }
 
 export interface Settings {

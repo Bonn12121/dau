@@ -12,10 +12,12 @@ export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
   const [mode, setMode] = useState<Mode>("classic");
+  const [customCount, setCustomCount] = useState<number | null>(null);
   const records = useGame((s) => s.records);
   const launch = useLaunch();
   const featured = BUILTINS[0]!;
   const modeMeta = MODES.find((item) => item.id === mode)!;
+  const totalQ = featured.questions.length;
 
   return (
     <Shell wide>
@@ -57,12 +59,40 @@ function Home() {
           <p className="mt-4 text-sm text-ink-soft">
             {featured.questions.length} câu · {DIFFICULTY_LABEL[featured.difficulty]} · thang 10 điểm
           </p>
+
+          <div className="mt-4 border-t border-ink/10 pt-4">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-ink-soft">
+              Số lượng câu hỏi (Tùy chọn)
+            </label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {[null, 5, 10, 15, 20].map((count) => {
+                const isSelected = customCount === count;
+                const label = count === null ? `Tất cả (${totalQ})` : `${count} câu`;
+                return (
+                  <button
+                    key={count ?? "all"}
+                    type="button"
+                    onClick={() => setCustomCount(count)}
+                    className={cn(
+                      "rounded-control px-3 py-1.5 text-xs font-medium transition-colors",
+                      isSelected
+                        ? "bg-ink text-paper"
+                        : "bg-paper/70 text-ink hover:bg-paper"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <button
             type="button"
-            onClick={() => launch(featured.id, mode)}
+            onClick={() => launch(featured.id, mode, customCount ?? undefined)}
             className="mt-6 flex min-h-12 w-full items-center justify-center rounded-control bg-ink px-4 py-3 font-semibold text-paper"
           >
-            Làm đề · {modeMeta.name}
+            Làm đề · {modeMeta.name} {customCount ? `(${customCount} câu)` : ""}
           </button>
           <p className="mt-3 text-xs text-ink-soft">
             Kỷ lục {modeMeta.name.toLowerCase()}: {formatScore(bestScore(records, featured.id, mode))}
