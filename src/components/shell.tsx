@@ -36,8 +36,9 @@ export function Shell({
 
   return (
     <div className="min-h-screen text-paper">
+      <div className="ambient" aria-hidden="true" />
       {!bare && (
-        <header className="border-b border-line bg-stage-2/80">
+        <header className="sticky top-0 z-30 border-b border-line bg-stage/75 backdrop-blur-md">
           <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
             <Link to="/" className="mr-auto flex items-center gap-2.5">
               <Seal />

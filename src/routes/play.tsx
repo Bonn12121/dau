@@ -155,7 +155,7 @@ function PlayScreen() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted">
             {MODES.find((item) => item.id === session.mode)?.name}
           </p>
-          <p className="pop mt-3 font-serif text-8xl font-extrabold text-white">{session.countdownN}</p>
+          <p key={session.countdownN} className="count-in mt-3 font-serif text-9xl font-extrabold text-white">{session.countdownN}</p>
           <p className="mt-3 text-base font-medium text-muted">{session.quiz.title}</p>
         </div>
       </div>
@@ -233,10 +233,27 @@ function PlayScreen() {
           )}
 
           <div className="rounded-lg bg-stage-2 px-3 py-1 text-sm font-extrabold tabular text-gold">
-            {formatScore(session.score)}
+            <span key={session.score} className="score-bump">{formatScore(session.score)}</span>
           </div>
         </div>
       </div>
+
+      {total && (
+        <div className="mb-2 flex gap-1">
+          {Array.from({ length: Math.min(total, 40) }, (_, i) => {
+            const log = session.logs[i];
+            return (
+              <span
+                key={i}
+                className={cn(
+                  "h-1 flex-1 rounded-full transition-colors duration-300",
+                  log ? (log.outcome === "correct" ? "bg-[#26890c]" : "bg-[#e21b3c]") : i === session.index ? "bg-white/60" : "bg-stage-2",
+                )}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Slim Timer Bar */}
       {session.mode === "time" && <AttackReadout endsAt={session.attackEndsAt} budget={session.attackBudget} />}
@@ -273,11 +290,12 @@ function PlayScreen() {
 
       {/* Question Card */}
       <article
+        key={`${session.index}-${session.lap}`}
         onClick={() => {
           if (session.phase === "feedback") continueRun();
         }}
         className={cn(
-          "sheet relative p-5 sm:p-7",
+          "sheet card-in relative p-5 sm:p-7",
           feedback?.outcome === "wrong" && "shake",
           feedback?.outcome === "correct" && "pop",
         )}

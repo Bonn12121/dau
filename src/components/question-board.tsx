@@ -114,7 +114,9 @@ export function QuestionBoard({
                 type="button"
                 disabled={disabled || isEliminated}
                 onClick={() => choose(choice.id)}
+                style={{ animationDelay: `${index * 55}ms` }}
                 className={cn(
+                  "tile-in",
                   kahootChoiceClass(index, state),
                   isEliminated && "line-through pointer-events-none opacity-25",
                 )}
@@ -178,7 +180,9 @@ export function QuestionBoard({
               type="button"
               disabled={disabled}
               onClick={() => send({ type: "bool", value: option.value })}
+              style={{ animationDelay: `${option.colorIdx === 1 ? 0 : 60}ms` }}
               className={cn(
+                "tile-in",
                 kahootChoiceClass(option.colorIdx, state),
                 "min-h-24 justify-center gap-3 text-center text-xl font-bold",
               )}
@@ -515,7 +519,7 @@ function kahootChoiceClass(index: number, state: "idle" | "picked" | "good" | "b
     "tile-btn flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left min-h-15",
     colorClass,
     state === "picked" && "ring-3 ring-white",
-    state === "good" && "kahoot-good ring-3 ring-white",
+    state === "good" && "kahoot-good ring-3 ring-white ping",
     state === "bad" && "kahoot-bad",
     state === "dim" && "kahoot-dim",
   );

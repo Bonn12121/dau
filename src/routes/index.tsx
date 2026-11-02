@@ -35,7 +35,7 @@ function Home() {
       <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         {/* Left: Mode Selection & Quiz Switcher */}
         <div>
-          <h1 className="font-serif text-4xl font-extrabold leading-tight text-white sm:text-5xl">
+          <h1 className="fade-up font-serif text-4xl font-extrabold leading-tight text-white sm:text-5xl">
             Chọn nhịp.
             <span className="block text-gold">Vào ván ngay.</span>
           </h1>
@@ -53,7 +53,7 @@ function Home() {
                   type="button"
                   onClick={() => setMode(item.id)}
                   className={cn(
-                    "flex items-start gap-3.5 rounded-xl p-4 text-left transition-all",
+                    "hover-lift fade-up flex items-start gap-3.5 rounded-xl p-4 text-left",
                     active
                       ? "bg-stage-soft text-white ring-2 ring-gold"
                       : "bg-stage-2 text-muted hover:bg-stage-soft/70 hover:text-white",
@@ -114,7 +114,7 @@ function Home() {
         </div>
 
         {/* Right: Launch Card */}
-        <article className="sheet p-6 sm:p-7">
+        <article className="sheet fade-up p-6 sm:p-7" style={{ animationDelay: "120ms" }}>
           <div className="flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wider text-ink-soft">
             <span className="text-stamp">{featured.category}</span>
             <span>{DIFFICULTY_LABEL[featured.difficulty]}</span>

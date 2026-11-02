@@ -196,3 +196,65 @@
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Motion system (subtle) ---------- */
+@keyframes tile-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes score-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes count-in {
+  0% { opacity: 0; transform: scale(1.6); }
+  30% { opacity: 1; transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.85); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -20px); }
+}
+@keyframes ring-ping {
+  0% { box-shadow: 0 0 0 0 rgb(255 255 255 / 0.7); }
+  100% { box-shadow: 0 0 0 12px rgb(255 255 255 / 0); }
+}
+
+.tile-in { animation: tile-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.card-in { animation: card-in 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fade-up { animation: fade-up 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.score-bump { animation: score-bump 360ms ease-out; display: inline-block; }
+.count-in { animation: count-in 550ms ease-out both; }
+.ping { animation: ring-ping 600ms ease-out; }
+
+.hover-lift { transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease; }
+.hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgb(0 0 0 / 0.25); }
+
+/* Soft ambient background blobs */
+.ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.ambient::before,
+.ambient::after {
+  content: "";
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 9999px;
+  filter: blur(110px);
+  opacity: 0.22;
+  animation: drift 18s ease-in-out infinite;
+}
+.ambient::before { background: #7c3aed; top: -140px; left: -120px; }
+.ambient::after { background: #1368ce; bottom: -160px; right: -120px; animation-delay: -9s; }
+
+.kahoot-0, .kahoot-1, .kahoot-2, .kahoot-3 { transition: transform 120ms ease, filter 120ms ease, opacity 200ms ease, box-shadow 120ms ease; }
+.tile-btn:hover:not(:disabled) { transform: translateY(-2px); }

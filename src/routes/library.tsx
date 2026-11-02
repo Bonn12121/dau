@@ -141,7 +141,7 @@ function Library() {
         {shown.map((quiz, idx) => (
           <article
             key={quiz.id}
-            className={cn("sheet flex flex-col justify-between border-t-6 p-5", ACCENTS[idx % ACCENTS.length])}
+            style={{ animationDelay: `${idx * 50}ms` }} className={cn("sheet hover-lift fade-up flex flex-col justify-between border-t-6 p-5", ACCENTS[idx % ACCENTS.length])}
           >
             <div>
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-ink-soft">

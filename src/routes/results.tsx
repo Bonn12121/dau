@@ -32,7 +32,7 @@ function Results() {
 
   return (
     <Shell>
-      <div className="sheet p-6 sm:p-8">
+      <div className="sheet fade-up p-6 sm:p-8">
         <div className="flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wider text-ink-soft">
           <span>
             {mode?.name} · {record.quizTitle}
@@ -65,7 +65,7 @@ function Results() {
             <span className="text-[#e21b3c]">Sai {record.wrong}</span>
           </div>
           <div className="mt-1.5 flex h-3 w-full overflow-hidden rounded-full bg-[#e21b3c]/25">
-            <div className="h-full bg-[#26890c]" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-[#26890c] transition-[width] duration-1000 ease-out" style={{ width: `${pct}%` }} />
           </div>
         </div>
 
