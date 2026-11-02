@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vercel/
+.grok/
+.qodo/
+.tanstack/
+artifacts/
+attachments/
+screenshots/*
+!screenshots/.gitkeep
+.node_modules.lock
+.env
+.env.*
+!.env.example
+AGENTS.md
