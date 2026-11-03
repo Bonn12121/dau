@@ -10,7 +10,7 @@ import { currentQuestion, useGame } from "@/game/store";
 import { MODES, type Mode } from "@/game/types";
 import { cn } from "@/lib/cn";
 import { useRealtimeRank, RankPill, OvertakeScreen } from "@/components/realtime-rank";
-import { useAdminAbuse, AdminAbuseBanner } from "@/components/admin-abuse";
+import { useAdminAbuse, AdminAbuseWarzone } from "@/components/admin-abuse";
 
 function isMode(value: unknown): value is Mode {
   return value === "classic" || value === "time" || value === "survival" || value === "endless" || value === "admin";
@@ -68,7 +68,8 @@ function PlayScreen() {
   );
 
   // Admin Abuse events
-  const { currentText: adminText } = useAdminAbuse(search.mode === "admin");
+  const { screenShake, siren, particles } = useAdminAbuse(search.mode === "admin");
+  const skipQuestion = useGame((s) => s.skipQuestion);
 
   useEffect(() => {
     if (!hydrated || !quiz) return;
@@ -191,6 +192,9 @@ function PlayScreen() {
     session.phase === "ask" && (session.items?.double ?? 0) > 0 && session.doubleLeft === 0;
   const canShield =
     session.phase === "ask" && (session.items?.shield ?? 0) > 0 && session.shields === 0;
+  const canSkip = session.phase === "ask" && (session.mode === "admin" || (session.items?.skip ?? 0) > 0);
+  const canNuke = session.phase === "ask" && (session.items?.nuke ?? 0) > 0 && question.type === "mc";
+  const canReveal = session.phase === "ask" && (session.items?.reveal ?? 0) > 0 && !session.hintOpen;
 
   function useFiftyFifty() {
     if (!canFifty || !question) return;
@@ -218,9 +222,29 @@ function PlayScreen() {
     useItem("shield");
   }
 
+  function handleSkip() {
+    if (!canSkip) return;
+    skipQuestion();
+  }
+
+  function useNuke() {
+    if (!canNuke || !question || !question.correctIds) return;
+    const ok = useItem("nuke");
+    if (!ok) return;
+    // Eliminates all wrong choices leaving only the correct answer
+    const wrong = (question.choices ?? []).filter((c) => !question.correctIds?.includes(c.id)).map((c) => c.id);
+    setEliminatedIds(wrong);
+  }
+
+  function useReveal() {
+    if (!canReveal) return;
+    const ok = useItem("reveal");
+    if (ok) useGame.getState().revealHint();
+  }
+
   return (
     <Shell bare>
-      <AdminAbuseBanner text={adminText} />
+      <AdminAbuseWarzone shake={screenShake} siren={siren} particles={particles} />
       {showOvertake && (
         <OvertakeScreen
           rank={overtakeRank}
@@ -331,7 +355,8 @@ function PlayScreen() {
           if (session.phase === "feedback") continueRun();
         }}
         className={cn(
-          "sheet card-in relative p-5 sm:p-7",
+          "sheet card-in relative p-5 sm:p-7 transition-transform duration-100",
+          screenShake && "animate-bounce scale-[1.02] border-red-500/80 shadow-[0_0_30px_rgba(239,68,68,0.5)]",
           feedback?.outcome === "wrong" && "shake",
           feedback?.outcome === "correct" && "pop",
         )}
@@ -451,7 +476,57 @@ function PlayScreen() {
               )}
             >
               <DauIcon name="shield" className="size-3.5" />
-              <span>{session.shields > 0 ? "Khiên bật!" : `Khiên bảo vệ (${session.items?.shield ?? 0})`}</span>
+              <span>{session.shields > 0 ? "Khiên bật!" : `Khiên (${session.items?.shield ?? 0})`}</span>
+            </button>
+
+            {/* Admin & Loot Items: Skip, Nuke, Reveal */}
+            <button
+              type="button"
+              disabled={!canSkip}
+              onClick={handleSkip}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition",
+                session.mode === "admin"
+                  ? "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30"
+                  : canSkip
+                  ? "bg-stage-soft text-white hover:bg-line"
+                  : "bg-stage-2 text-muted/40 cursor-not-allowed"
+              )}
+            >
+              <DauIcon name="skip" className="size-3.5" />
+              <span>{session.mode === "admin" ? "Skip câu ⚡ (Free)" : `Skip (${session.items?.skip ?? 0})`}</span>
+            </button>
+
+            {question.type === "mc" && (
+              <button
+                type="button"
+                disabled={!canNuke}
+                onClick={useNuke}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition",
+                  canNuke
+                    ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30"
+                    : "bg-stage-2 text-muted/40 cursor-not-allowed"
+                )}
+              >
+                <DauIcon name="nuke" className="size-3.5" />
+                <span>Nuke 💣 ({session.items?.nuke ?? 0})</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={!canReveal}
+              onClick={useReveal}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition",
+                canReveal
+                  ? "bg-stage-soft text-white hover:bg-line"
+                  : "bg-stage-2 text-muted/40 cursor-not-allowed"
+              )}
+            >
+              <DauIcon name="reveal" className="size-3.5" />
+              <span>Gợi ý ({session.items?.reveal ?? 0})</span>
             </button>
           </div>
 

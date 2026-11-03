@@ -44,67 +44,6 @@ function Home() {
 
   return (
     <Shell wide>
-      {/* Upcoming Update 2 Banner */}
-      <div className="fade-up mb-8 overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-r from-stage-soft via-stage-2 to-stage-soft p-5 sm:p-6 shadow-2xl relative">
-        <div className="absolute top-0 right-0 h-full w-1/3 bg-radial from-gold/15 to-transparent pointer-events-none" />
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          {/* Ảnh gốc giữ nguyên 100% */}
-          <div className="relative shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-lg">
-            <img
-              src="/update_2_raw.png"
-              alt="UPDATE 2"
-              className="h-36 sm:h-44 w-auto object-contain rounded-xl hover:scale-105 transition-transform duration-300"
-            />
-            <span className="absolute top-2 left-2 rounded-md bg-gold px-2 py-0.5 text-[10px] font-black uppercase text-ink tracking-wider">
-              SẮP RA MẮT
-            </span>
-          </div>
-
-          {/* Card nội dung ở bên cạnh */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="inline-block rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider text-gold">
-                🚀 SẮP DIỄN RA
-              </span>
-              <h2 className="font-serif text-2xl font-black text-white sm:text-3xl">
-                UPDATE 2
-              </h2>
-            </div>
-
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 text-xs sm:text-sm">
-              <div className="flex items-start gap-2 text-paper">
-                <span className="text-gold font-bold">🎁</span>
-                <div>
-                  <span className="font-bold text-white">Minigames cho vật phẩm:</span>{" "}
-                  <span className="text-muted">50/50, freeze time, x2 points...</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-paper">
-                <span className="text-gold font-bold">📚</span>
-                <div>
-                  <span className="font-bold text-white">Lịch sử, địa lý:</span>{" "}
-                  <span className="text-muted">mở rộng thêm bộ câu hỏi mới.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-paper">
-                <span className="text-gold font-bold">🔄</span>
-                <div>
-                  <span className="font-bold text-white">Thử lại:</span>{" "}
-                  <span className="text-muted">người dùng có cơ hội thứ 2 để trả lời lại các câu hỏi sai để lấy thêm điểm (sau khi đã trả lời xong hết tất cả các câu).</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-paper">
-                <span className="text-gold font-bold">🏆</span>
-                <div>
-                  <span className="font-bold text-white">Đa người chơi:</span>{" "}
-                  <span className="text-muted">bảng xếp hạng thành tích người chơi.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         {/* Left: Mode Selection & Quiz Switcher */}
         <div>

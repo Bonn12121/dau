@@ -225,6 +225,9 @@ export interface Inventory {
   freeze: number;
   double: number;
   shield: number;
+  skip: number;
+  nuke: number;
+  reveal: number;
 }
 
 export interface RunRecord {

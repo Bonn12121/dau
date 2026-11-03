@@ -88,11 +88,31 @@ export function DauIcon({
   name,
   className = "size-5",
 }: {
-  name: "classic" | "time" | "survival" | "endless" | "admin" | "streak" | "fifty" | "freeze" | "double" | "shield" | "hint" | "sound-on" | "sound-off" | "settings" | "close";
+  name: "classic" | "time" | "survival" | "endless" | "admin" | "streak" | "fifty" | "freeze" | "double" | "shield" | "skip" | "nuke" | "reveal" | "hint" | "sound-on" | "sound-off" | "settings" | "close";
   className?: string;
 }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {name === "skip" && (
+        <>
+          <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" />
+          <line x1="19" y1="5" x2="19" y2="19" strokeWidth={3} />
+        </>
+      )}
+      {name === "nuke" && (
+        <>
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+          <path d="M12 2a10 10 0 0 0-8.66 5l4.33 2.5a5 5 0 0 1 8.66-2.5L12 2z" fill="currentColor" />
+          <path d="M2 12a10 10 0 0 0 5 8.66l2.5-4.33a5 5 0 0 1-2.5-8.66L2 12z" fill="currentColor" />
+          <path d="M22 12a10 10 0 0 1-5 8.66l-2.5-4.33a5 5 0 0 0 2.5-8.66L22 12z" fill="currentColor" />
+        </>
+      )}
+      {name === "reveal" && (
+        <>
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+        </>
+      )}
       {name === "classic" && (
         <>
           <rect x="4" y="3" width="16" height="18" rx="2.5" />

@@ -158,6 +158,7 @@ interface State {
   clearNotice: () => void;
   useItem: (kind: keyof Inventory) => boolean;
   grant: (patch: { items?: Partial<Inventory>; score?: number; double?: number; shields?: number }) => void;
+  skipQuestion: () => void;
 }
 
 export const useGame = create<State>((set, get) => ({
@@ -256,8 +257,8 @@ export const useGame = create<State>((set, get) => ({
       answerTimeSum: 0,
       items:
         mode === "admin"
-          ? { fifty: 3, freeze: 3, double: 2, shield: 1 }
-          : { fifty: 2, freeze: 2, double: 1, shield: 0 },
+          ? { fifty: 9, freeze: 9, double: 5, shield: 5, skip: 5, nuke: 3, reveal: 5 }
+          : { fifty: 2, freeze: 2, double: 1, shield: 0, skip: 0, nuke: 0, reveal: 0 },
       doubleLeft: 0,
       shields: 0,
       retryRound: false,
@@ -318,7 +319,7 @@ export const useGame = create<State>((set, get) => ({
     let reward: keyof Inventory | undefined;
     const items = { ...session.items };
     if (result.outcome === "correct" && streak > 0 && streak % 3 === 0) {
-      const pool: (keyof Inventory)[] = ["fifty", "freeze", "double", "shield"];
+      const pool: (keyof Inventory)[] = ["fifty", "freeze", "double", "shield", "skip", "reveal"];
       reward = pool[Math.floor(Math.random() * pool.length)]!;
       items[reward] += 1;
     }
@@ -472,6 +473,62 @@ export const useGame = create<State>((set, get) => ({
     set({ records: [], lastRun: null });
   },
   clearNotice: () => set({ notice: "" }),
+  skipQuestion: () => {
+    const session = get().session;
+    if (!session || session.locked || session.phase !== "ask") return;
+    const question = questionById(session.quiz, session.order[session.index] ?? "");
+    if (!question) return;
+
+    // Free skip in admin mode, or consume 1 skip item
+    if (session.mode !== "admin") {
+      if ((session.items.skip ?? 0) <= 0) return;
+      session.items.skip -= 1;
+    }
+
+    const elapsed = Math.max(0, (performance.now() - session.questionStartedAt) / 1000);
+    const log: Log = {
+      questionId: question.id,
+      kicker: question.kicker,
+      prompt: question.prompt,
+      type: question.type,
+      outcome: "correct",
+      gained: question.points,
+      exam: question.examWeight ?? 0,
+      given: "Admin Skip ⚡",
+      answer: "Đã vượt qua",
+      explanation: question.explanation,
+      elapsed,
+      timedOut: false,
+    };
+
+    set({
+      session: {
+        ...session,
+        locked: true,
+        phase: "feedback",
+        score: session.score + question.points,
+        streak: session.streak + 1,
+        bestStreak: Math.max(session.bestStreak, session.streak + 1),
+        correct: session.correct + 1,
+        seen: session.seen + 1,
+        logs: [...session.logs, log],
+        feedback: {
+          outcome: "correct",
+          gained: question.points,
+          exam: question.examWeight ?? 0,
+          given: "Admin Skip ⚡",
+          answer: "Bỏ qua thành công",
+          picked: [],
+          solution: [],
+          prompt: question.prompt,
+          explanation: question.explanation,
+          timedOut: false,
+          kicker: question.kicker,
+        },
+      },
+    });
+    sfx("streak");
+  },
   useItem: (kind) => {
     const session = get().session;
     if (!session || session.phase !== "ask" || session.items[kind] <= 0) return false;
