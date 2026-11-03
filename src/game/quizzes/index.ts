@@ -1,8 +1,9 @@
 import type { Quiz } from "@/game/types";
 import { gdcdQuiz, gdcdFullBankQuiz } from "@/game/quizzes/gdcd";
 import { SAMPLE_QUIZZES } from "@/game/quizzes/samples";
+import { diaQuiz, suDiaEssayQuiz, suQuiz } from "@/game/quizzes/su-dia";
 
-export const BUILTINS: Quiz[] = [gdcdFullBankQuiz, gdcdQuiz, ...SAMPLE_QUIZZES];
+export const BUILTINS: Quiz[] = [suQuiz, diaQuiz, gdcdFullBankQuiz, suDiaEssayQuiz, gdcdQuiz, ...SAMPLE_QUIZZES];
 
 export function allQuizzes(custom: Quiz[]) {
   const ids = new Set(BUILTINS.map((q) => q.id));

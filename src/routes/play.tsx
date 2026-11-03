@@ -9,9 +9,11 @@ import { sfx } from "@/game/sound";
 import { currentQuestion, useGame } from "@/game/store";
 import { MODES, type Mode } from "@/game/types";
 import { cn } from "@/lib/cn";
+import { useRealtimeRank, RankPill, OvertakeScreen } from "@/components/realtime-rank";
+import { useAdminAbuse, AdminAbuseBanner } from "@/components/admin-abuse";
 
 function isMode(value: unknown): value is Mode {
-  return value === "classic" || value === "time" || value === "survival" || value === "endless";
+  return value === "classic" || value === "time" || value === "survival" || value === "endless" || value === "admin";
 }
 
 export const Route = createFileRoute("/play")({
@@ -51,12 +53,22 @@ function PlayScreen() {
   const quit = useGame((s) => s.quit);
 
   const [stopAsk, setStopAsk] = useState(false);
-  const [fiftyLeft, setFiftyLeft] = useState(2);
-  const [freezeLeft, setFreezeLeft] = useState(2);
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
   const [frozen, setFrozen] = useState(false);
 
+  const useItem = useGame((s) => s.useItem);
   const quiz = hydrated ? findQuiz(custom, search.quiz) : undefined;
+
+  // Realtime leaderboard ranking & overtake screen
+  const { rank, showOvertake, overtakeRank, dismissOvertake } = useRealtimeRank(
+    quiz?.id ?? "",
+    session?.score ?? 0,
+    session?.streak ?? 0,
+    search.mode
+  );
+
+  // Admin Abuse events
+  const { currentText: adminText } = useAdminAbuse(search.mode === "admin");
 
   useEffect(() => {
     if (!hydrated || !quiz) return;
@@ -70,8 +82,6 @@ function PlayScreen() {
     )
       return;
     if (current?.phase === "done") return;
-    setFiftyLeft(2);
-    setFreezeLeft(2);
     startRun(quiz, search.mode, search.limit);
   }, [hydrated, quiz, search.mode, search.quiz, search.limit, startRun]);
 
@@ -170,32 +180,57 @@ function PlayScreen() {
 
   const canFifty =
     session.phase === "ask" &&
-    fiftyLeft > 0 &&
+    (session.items?.fifty ?? 0) > 0 &&
     eliminatedIds.length === 0 &&
     question.type === "mc" &&
     (question.choices?.length ?? 0) >= 3;
 
-  const canFreeze = session.phase === "ask" && freezeLeft > 0 && !frozen && session.timeLimit > 0;
+  const canFreeze =
+    session.phase === "ask" && (session.items?.freeze ?? 0) > 0 && !frozen && session.timeLimit > 0;
+  const canDouble =
+    session.phase === "ask" && (session.items?.double ?? 0) > 0 && session.doubleLeft === 0;
+  const canShield =
+    session.phase === "ask" && (session.items?.shield ?? 0) > 0 && session.shields === 0;
 
   function useFiftyFifty() {
     if (!canFifty || !question) return;
+    const ok = useItem("fifty");
+    if (!ok) return;
     const wrongChoices = (question.choices ?? []).filter((c) => !question.correctIds?.includes(c.id));
     const shuffledWrong = [...wrongChoices].sort(() => Math.random() - 0.5);
     const toRemove = shuffledWrong.slice(0, Math.min(2, wrongChoices.length)).map((c) => c.id);
     setEliminatedIds(toRemove);
-    setFiftyLeft((n) => n - 1);
-    sfx("tap");
   }
 
   function useFreezeTimer() {
     if (!canFreeze) return;
-    setFrozen(true);
-    setFreezeLeft((n) => n - 1);
-    sfx("tap");
+    const ok = useItem("freeze");
+    if (ok) setFrozen(true);
+  }
+
+  function useDoublePoints() {
+    if (!canDouble) return;
+    useItem("double");
+  }
+
+  function useShield() {
+    if (!canShield) return;
+    useItem("shield");
   }
 
   return (
     <Shell bare>
+      <AdminAbuseBanner text={adminText} />
+      {showOvertake && (
+        <OvertakeScreen
+          rank={overtakeRank}
+          onContinue={() => {
+            dismissOvertake();
+            if (session.phase === "feedback") continueRun();
+          }}
+        />
+      )}
+
       {/* Clean Compact Top HUD */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
@@ -207,9 +242,10 @@ function PlayScreen() {
             Dừng
           </button>
           <span className="tabular text-sm font-bold text-white">
-            Câu {number}
-            {total ? <span className="text-muted"> / {total}</span> : ""}
+            {session.retryRound ? "Thử lại câu sai" : `Câu ${number}`}
+            {total && !session.retryRound ? <span className="text-muted"> / {total}</span> : ""}
           </span>
+          <RankPill rank={rank} />
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -347,9 +383,9 @@ function PlayScreen() {
       </article>
 
       {/* Minimal Bottom Power-ups Bar */}
-      {session.phase === "ask" && (question.type === "mc" || session.timeLimit > 0) && (
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+      {session.phase === "ask" && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {question.type === "mc" && (
               <button
                 type="button"
@@ -363,7 +399,7 @@ function PlayScreen() {
                 )}
               >
                 <DauIcon name="fifty" className="size-3.5" />
-                <span>50/50 ({fiftyLeft})</span>
+                <span>50/50 ({session.items?.fifty ?? 0})</span>
               </button>
             )}
 
@@ -380,9 +416,43 @@ function PlayScreen() {
                 )}
               >
                 <DauIcon name="freeze" className="size-3.5" />
-                <span>{frozen ? "Đã dừng giờ" : `Dừng giờ (${freezeLeft})`}</span>
+                <span>{frozen ? "Đã dừng giờ" : `Dừng giờ (${session.items?.freeze ?? 0})`}</span>
               </button>
             )}
+
+            <button
+              type="button"
+              disabled={!canDouble}
+              onClick={useDoublePoints}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition",
+                session.doubleLeft > 0
+                  ? "bg-gold text-ink font-extrabold"
+                  : canDouble
+                  ? "bg-stage-soft text-white hover:bg-line"
+                  : "bg-stage-2 text-muted/40 cursor-not-allowed"
+              )}
+            >
+              <DauIcon name="double" className="size-3.5" />
+              <span>{session.doubleLeft > 0 ? "x2 Đang bật!" : `x2 Điểm (${session.items?.double ?? 0})`}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={!canShield}
+              onClick={useShield}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition",
+                session.shields > 0
+                  ? "bg-[#26890c] text-white font-extrabold"
+                  : canShield
+                  ? "bg-stage-soft text-white hover:bg-line"
+                  : "bg-stage-2 text-muted/40 cursor-not-allowed"
+              )}
+            >
+              <DauIcon name="shield" className="size-3.5" />
+              <span>{session.shields > 0 ? "Khiên bật!" : `Khiên bảo vệ (${session.items?.shield ?? 0})`}</span>
+            </button>
           </div>
 
           <span className="hidden text-xs text-muted sm:inline">Phím tắt: 1, 2, 3, 4</span>

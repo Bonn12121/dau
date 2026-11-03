@@ -88,7 +88,7 @@ export function DauIcon({
   name,
   className = "size-5",
 }: {
-  name: "classic" | "time" | "survival" | "endless" | "streak" | "fifty" | "freeze" | "hint" | "sound-on" | "sound-off" | "settings" | "close";
+  name: "classic" | "time" | "survival" | "endless" | "admin" | "streak" | "fifty" | "freeze" | "double" | "shield" | "hint" | "sound-on" | "sound-off" | "settings" | "close";
   className?: string;
 }) {
   return (
@@ -98,6 +98,21 @@ export function DauIcon({
           <rect x="4" y="3" width="16" height="18" rx="2.5" />
           <path d="M8 8h8M8 12h8M8 16h5" />
         </>
+      )}
+      {name === "admin" && (
+        <>
+          <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z" fill="currentColor" stroke="none" />
+          <path d="M4 20h16" />
+        </>
+      )}
+      {name === "double" && (
+        <>
+          <path d="M4 19h6l-6-6h6" />
+          <path d="M14 8l6 8M20 8l-6 8" />
+        </>
+      )}
+      {name === "shield" && (
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" />
       )}
       {name === "time" && (
         <>

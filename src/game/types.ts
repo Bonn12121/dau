@@ -1,4 +1,4 @@
-export type Mode = "classic" | "time" | "survival" | "endless";
+export type Mode = "classic" | "time" | "survival" | "endless" | "admin";
 
 export type Difficulty = "easy" | "medium" | "hard" | "insane";
 
@@ -12,7 +12,27 @@ export type QType =
   | "image"
   | "hotspot"
   | "poll"
-  | "rubric";
+  | "rubric"
+  | "essay"
+  | "table";
+
+/** One keyword "idea": any of the synonyms counts (accent/case-insensitive). */
+export interface KeyIdea {
+  label: string;
+  any: string[];
+}
+
+/** Table cell: plain text, or a blank the player fills from the chip bank. */
+export type TableCell = string | { blank: string };
+
+export interface TableSpec {
+  headers: string[];
+  rows: TableCell[][];
+  /** Answer per blank id. */
+  answers: Record<string, string>;
+  /** Extra wrong chips. */
+  decoys?: string[];
+}
 
 export type MarkName = "seal" | "book" | "compass" | "flame" | "leaf" | "pin" | "bolt" | "drop";
 
@@ -73,6 +93,13 @@ export interface Question {
   correctHotspot?: string;
   pollWeights?: Record<string, number>;
   rubric?: string[];
+  /** essay: keyword ideas to detect */
+  ideas?: KeyIdea[];
+  /** essay: fraction of ideas needed for "correct" (default 0.5) */
+  pass?: number;
+  /** essay: model answer shown after grading */
+  model?: string;
+  table?: TableSpec;
 }
 
 export interface Quiz {
@@ -96,6 +123,8 @@ export type Payload =
   | { type: "bins"; placement: Record<string, string> }
   | { type: "hotspot"; id: string }
   | { type: "rubric"; accept: boolean; text: string }
+  | { type: "essay"; text: string }
+  | { type: "table"; fill: Record<string, string> }
   | { type: "timeout" };
 
 export interface GradeCtx {
@@ -115,6 +144,12 @@ export interface GradeResult {
   picked: string[];
   solution: string[];
   poll?: { id: string; text: string; pct: number }[];
+  /** partial-credit ratio 0..1 for essay/table */
+  ratio?: number;
+  hits?: string[];
+  misses?: string[];
+  /** essay: indices [start,end) of detected keywords in the given text */
+  marks?: [number, number][];
 }
 
 export interface Log {
@@ -137,6 +172,10 @@ export interface Feedback extends GradeResult {
   explanation?: string;
   timedOut: boolean;
   kicker?: string;
+  doubled?: boolean;
+  shielded?: boolean;
+  reward?: keyof Inventory;
+  retry?: boolean;
 }
 
 export interface Session {
@@ -169,6 +208,23 @@ export interface Session {
   logs: Log[];
   runStartedAt: number;
   answerTimeSum: number;
+  /** Update 2: power-up inventory */
+  items: Inventory;
+  /** number of upcoming answers that score x2 */
+  doubleLeft: number;
+  /** wrong answers forgiven (no streak/life loss) */
+  shields: number;
+  /** second-chance round over the wrong answers */
+  retryRound: boolean;
+  /** shown once when entering the retry round */
+  retryIntro: boolean;
+}
+
+export interface Inventory {
+  fifty: number;
+  freeze: number;
+  double: number;
+  shield: number;
 }
 
 export interface RunRecord {
@@ -226,6 +282,12 @@ export const MODES: { id: Mode; name: string; en: string; blurb: string }[] = [
     en: "Endless",
     blurb: "Càng về sau càng ít thời gian. Sai một câu là dừng.",
   },
+  {
+    id: "admin",
+    name: "Admin Abuse",
+    en: "Admin abuse",
+    blurb: "Admin “lạm quyền”: rải vật phẩm miễn phí, mở sự kiện x2, mưa điểm… liên tục.",
+  },
 ];
 
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
@@ -245,5 +307,7 @@ export const TYPE_LABEL: Record<QType, string> = {
   image: "Câu ảnh",
   hotspot: "Chọn trên hình",
   poll: "Thăm dò",
-  rubric: "Tự luận",
+  rubric: "Tự luận (tự chấm)",
+  essay: "Tự luận (dò từ khóa)",
+  table: "Điền bảng",
 };

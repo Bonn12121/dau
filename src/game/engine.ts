@@ -133,8 +133,8 @@ export function attackBudgetMs(quiz: Quiz) {
 }
 
 export function poolFor(quiz: Quiz, mode: Mode) {
-  if (mode === "classic" || mode === "survival") return quiz.questions.map((q) => q.id);
-  const timed = quiz.questions.filter((q) => q.type !== "rubric").map((q) => q.id);
+  if (mode === "classic" || mode === "survival" || mode === "admin") return quiz.questions.map((q) => q.id);
+  const timed = quiz.questions.filter((q) => q.type !== "rubric" && q.type !== "essay" && q.type !== "table").map((q) => q.id);
   return timed.length ? timed : quiz.questions.map((q) => q.id);
 }
 
@@ -186,6 +186,10 @@ export function solutionText(q: Question) {
       return "Không có đáp án đúng";
     case "rubric":
       return (q.rubric ?? []).join(" ");
+    case "essay":
+      return q.model ?? (q.ideas ?? []).map((i) => i.label).join("; ");
+    case "table":
+      return Object.values(q.table?.answers ?? {}).join(" · ");
     default:
       return "";
   }
@@ -322,7 +326,86 @@ export function grade(q: Question, payload: Payload, ctx: GradeCtx): GradeResult
     return pack(q, payload.accept ? "correct" : "wrong", ctx, given, [], []);
   }
 
+  if (q.type === "essay" && payload.type === "essay") {
+    const essayText = payload.text.trim();
+    const det = detectIdeas(essayText, q.ideas ?? []);
+    const total = Math.max(1, (q.ideas ?? []).length);
+    const ratio = det.hits.length / total;
+    const ok = ratio >= (q.pass ?? 0.5);
+    const res = pack(q, ok ? "correct" : "wrong", ctx, essayText || "(không viết)", [], [], q.model ?? solutionText(q));
+    return partial(q, res, ratio, ctx, { hits: det.hits, misses: det.misses, marks: det.marks });
+  }
+
+  if (q.type === "table" && payload.type === "table" && q.table) {
+    const ids = Object.keys(q.table.answers);
+    const good = ids.filter((id) => fold(payload.fill[id] ?? "") === fold(q.table!.answers[id] ?? ""));
+    const ratio = ids.length ? good.length / ids.length : 0;
+    const ok = ratio >= (q.pass ?? 0.99);
+    const given = `${good.length}/${ids.length} ô đúng`;
+    const res = pack(q, ok ? "correct" : "wrong", ctx, given, good, ids);
+    return partial(q, res, ratio, ctx, {});
+  }
+
   return pack(q, "wrong", ctx, "Chưa trả lời", [], []);
+}
+
+/** Partial credit for essay / table: points scale with the ratio, even below the pass line. */
+function partial(
+  q: Question,
+  res: GradeResult,
+  ratio: number,
+  ctx: GradeCtx,
+  extra: Pick<GradeResult, "hits" | "misses" | "marks">,
+): GradeResult {
+  const mult = 1 + Math.min(Math.max(0, ctx.streak), 8) * 0.1;
+  let gained = Math.round(q.points * ratio * (res.outcome === "correct" ? mult : 0.6));
+  if (ctx.hintUsed && ctx.hintPenalty) gained = Math.round(gained * 0.8);
+  return {
+    ...res,
+    ...extra,
+    ratio,
+    gained,
+    exam: Math.round((q.examWeight ?? 0) * ratio * 100) / 100,
+  };
+}
+
+/** Per-character accent fold that keeps indices aligned with Array.from(text). */
+function foldChars(text: string) {
+  return Array.from(text.normalize("NFC")).map((ch) => {
+    const f = ch
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[đĐ]/g, "d")
+      .toLowerCase();
+    return f.length === 1 ? f : f[0] ?? " ";
+  });
+}
+
+export function detectIdeas(text: string, ideas: { label: string; any: string[] }[]) {
+  const chars = foldChars(text);
+  const hay = chars.join("");
+  const hits: string[] = [];
+  const misses: string[] = [];
+  const marks: [number, number][] = [];
+  for (const idea of ideas) {
+    let found = false;
+    for (const syn of idea.any) {
+      const needle = fold(syn);
+      if (!needle) continue;
+      const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
+      const re = new RegExp(`(^|[^a-z0-9])(${esc})(?=$|[^a-z0-9])`, "g");
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(hay))) {
+        const start = m.index + m[1]!.length;
+        marks.push([start, start + m[2]!.length]);
+        found = true;
+        if (re.lastIndex === m.index) re.lastIndex++;
+      }
+    }
+    (found ? hits : misses).push(idea.label);
+  }
+  marks.sort((a, b) => a[0] - b[0]);
+  return { hits, misses, marks };
 }
 
 export function summaryLine(accuracy: number) {
@@ -364,6 +447,8 @@ export function questionIssues(q: Question): string | null {
     if (!q.hotspots?.some((h) => h.id === q.correctHotspot)) return "Chọn vùng đúng.";
   }
   if (q.type === "rubric" && !(q.rubric ?? []).some((r) => r.trim())) return "Cần đáp án gợi ý để tự chấm.";
+  if (q.type === "essay" && !(q.ideas ?? []).length) return "Cần ít nhất một ý từ khóa.";
+  if (q.type === "table" && !Object.keys(q.table?.answers ?? {}).length) return "Bảng cần ít nhất một ô trống.";
   return null;
 }
 

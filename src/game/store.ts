@@ -12,7 +12,7 @@ import {
 } from "@/game/engine";
 import { findQuiz, BUILTINS } from "@/game/quizzes";
 import { sfx, syncAudio } from "@/game/sound";
-import type { Feedback, Log, Mode, Payload, Question, Quiz, RunRecord, Session, Settings } from "@/game/types";
+import type { Feedback, Inventory, Log, Mode, Payload, Question, Quiz, RunRecord, Session, Settings } from "@/game/types";
 
 const SETTINGS_KEY = "dau.settings.v1";
 const QUIZ_KEY = "dau.quizzes.v1";
@@ -98,7 +98,7 @@ function finish(session: Session, records: RunRecord[]): { session: Session; rec
     .filter((r) => r.quizId === session.quiz.id && r.mode === session.mode)
     .reduce((m, r) => Math.max(m, r.score), 0);
   const finishedAll =
-    session.mode === "classic" &&
+    (session.mode === "classic" || session.mode === "admin") &&
     session.logs.length >= (session.questionLimit ?? session.quiz.questions.length);
   const maxPossibleExam = session.order.reduce((sum, qId) => {
     const q = questionById(session.quiz, qId);
@@ -156,6 +156,8 @@ interface State {
   quit: () => void;
   clearHistory: () => void;
   clearNotice: () => void;
+  useItem: (kind: keyof Inventory) => boolean;
+  grant: (patch: { items?: Partial<Inventory>; score?: number; double?: number; shields?: number }) => void;
 }
 
 export const useGame = create<State>((set, get) => ({
@@ -252,6 +254,14 @@ export const useGame = create<State>((set, get) => ({
       logs: [],
       runStartedAt: Date.now(),
       answerTimeSum: 0,
+      items:
+        mode === "admin"
+          ? { fifty: 3, freeze: 3, double: 2, shield: 1 }
+          : { fifty: 2, freeze: 2, double: 1, shield: 0 },
+      doubleLeft: 0,
+      shields: 0,
+      retryRound: false,
+      retryIntro: false,
     };
     set({ session: base, notice: "" });
     sfx("tick");
@@ -288,14 +298,30 @@ export const useGame = create<State>((set, get) => ({
     if (!question) return;
     const elapsed = Math.max(0, (performance.now() - session.questionStartedAt) / 1000);
     const timedOut = payload.type === "timeout";
-    const result = grade(question, payload, {
+    const raw = grade(question, payload, {
       elapsed: timedOut ? session.timeLimit || elapsed : elapsed,
       timeLimit: session.timeLimit,
       streak: session.streak,
       hintUsed: session.hintUsed,
       hintPenalty: get().settings.hintPenalty,
     });
-    const streak = result.outcome === "correct" ? session.streak + 1 : result.outcome === "neutral" ? session.streak : 0;
+    const doubled = session.doubleLeft > 0 && raw.gained > 0;
+    const shielded = raw.outcome === "wrong" && session.shields > 0;
+    const retry = session.retryRound;
+    let gained = raw.gained;
+    if (doubled) gained *= 2;
+    if (retry) gained = Math.round(gained * 0.5);
+    const result = { ...raw, gained };
+    const streak =
+      result.outcome === "correct" ? session.streak + 1 : result.outcome === "neutral" || shielded ? session.streak : 0;
+    // Minigame reward: every 3-answer streak drops a random power-up.
+    let reward: keyof Inventory | undefined;
+    const items = { ...session.items };
+    if (result.outcome === "correct" && streak > 0 && streak % 3 === 0) {
+      const pool: (keyof Inventory)[] = ["fifty", "freeze", "double", "shield"];
+      reward = pool[Math.floor(Math.random() * pool.length)]!;
+      items[reward] += 1;
+    }
     const log: Log = {
       questionId: question.id,
       kicker: question.kicker,
@@ -316,20 +342,30 @@ export const useGame = create<State>((set, get) => ({
       explanation: question.explanation,
       timedOut,
       kicker: question.kicker,
+      doubled,
+      shielded,
+      reward,
+      retry,
     };
-    const lives = session.mode === "survival" && result.outcome === "wrong" ? session.lives - 1 : session.lives;
+    const lives =
+      session.mode === "survival" && result.outcome === "wrong" && !shielded ? session.lives - 1 : session.lives;
+    const isCorrect = result.outcome === "correct";
     set({
       session: {
         ...session,
         locked: true,
         phase: "feedback",
         lives,
+        items,
+        doubleLeft: doubled ? session.doubleLeft - 1 : session.doubleLeft,
+        shields: shielded ? session.shields - 1 : session.shields,
+        retryIntro: false,
         score: session.score + result.gained,
         exam: session.exam + result.exam,
         streak,
         bestStreak: Math.max(session.bestStreak, streak),
-        correct: session.correct + (result.outcome === "correct" ? 1 : 0),
-        wrong: session.wrong + (result.outcome === "wrong" ? 1 : 0),
+        correct: session.correct + (isCorrect ? 1 : 0),
+        wrong: retry ? session.wrong - (isCorrect ? 1 : 0) : session.wrong + (result.outcome === "wrong" ? 1 : 0),
         polls: session.polls + (result.outcome === "neutral" ? 1 : 0),
         seen: session.seen + 1,
         feedback,
@@ -391,7 +427,18 @@ export const useGame = create<State>((set, get) => ({
     const wrongEnded = session.mode === "endless" && session.feedback?.outcome === "wrong";
     const dead = session.mode === "survival" && session.lives <= 0;
     const attackOver = session.mode === "time" && session.attackEndsAt !== null && performance.now() >= session.attackEndsAt;
-    const classicOver = session.mode === "classic" && session.index + 1 >= session.order.length;
+    const classicOver =
+      (session.mode === "classic" || session.mode === "admin") && session.index + 1 >= session.order.length;
+    if (classicOver && !session.retryRound) {
+      const wrongIds = [...new Set(session.logs.filter((l) => l.outcome === "wrong").map((l) => l.questionId))];
+      if (wrongIds.length) {
+        set({
+          session: { ...enter({ ...session, order: wrongIds, retryRound: true }, 0, session.lap + 1), retryIntro: true },
+        });
+        sfx("streak");
+        return;
+      }
+    }
     if (wrongEnded || dead || attackOver || classicOver) {
       const done = finish(session, get().records);
       writeJson(RECORD_KEY, done.records);
@@ -425,6 +472,36 @@ export const useGame = create<State>((set, get) => ({
     set({ records: [], lastRun: null });
   },
   clearNotice: () => set({ notice: "" }),
+  useItem: (kind) => {
+    const session = get().session;
+    if (!session || session.phase !== "ask" || session.items[kind] <= 0) return false;
+    const items = { ...session.items, [kind]: session.items[kind] - 1 };
+    set({
+      session: {
+        ...session,
+        items,
+        doubleLeft: kind === "double" ? session.doubleLeft + 1 : session.doubleLeft,
+        shields: kind === "shield" ? session.shields + 1 : session.shields,
+      },
+    });
+    sfx("tap");
+    return true;
+  },
+  grant: (patch) => {
+    const session = get().session;
+    if (!session || session.phase === "done") return;
+    const items = { ...session.items };
+    for (const k of Object.keys(patch.items ?? {}) as (keyof Inventory)[]) items[k] += patch.items![k] ?? 0;
+    set({
+      session: {
+        ...session,
+        items,
+        score: session.score + (patch.score ?? 0),
+        doubleLeft: session.doubleLeft + (patch.double ?? 0),
+        shields: session.shields + (patch.shields ?? 0),
+      },
+    });
+  },
 }));
 
 export function bestScore(records: RunRecord[], quizId: string, mode?: Mode) {

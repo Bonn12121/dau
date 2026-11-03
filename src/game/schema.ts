@@ -1,7 +1,7 @@
 import { questionIssues, quizIssues, uid } from "@/game/engine";
 import type { Difficulty, MarkName, QType, Question, Quiz } from "@/game/types";
 
-const TYPES: QType[] = ["mc", "tf", "fill", "order", "match", "sort", "image", "hotspot", "poll", "rubric"];
+const TYPES: QType[] = ["mc", "tf", "fill", "order", "match", "sort", "image", "hotspot", "poll", "rubric", "essay", "table"];
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "insane"];
 const MARKS = new Set<string>(["seal", "book", "compass", "flame", "leaf", "pin", "bolt", "drop"]);
 
@@ -97,6 +97,15 @@ function cleanQuestion(raw: unknown, index: number): Question | string {
     }
   }
   if (Array.isArray(raw.rubric)) q.rubric = raw.rubric.filter((r) => typeof r === "string");
+  if (Array.isArray(raw.ideas)) {
+    q.ideas = raw.ideas.filter(isRecord).map((row) => ({
+      label: str(row.label),
+      any: Array.isArray(row.any) ? row.any.filter((a): a is string => typeof a === "string") : [],
+    }));
+  }
+  if (typeof raw.pass === "number") q.pass = raw.pass;
+  if (typeof raw.model === "string") q.model = raw.model;
+  if (isRecord(raw.table)) q.table = raw.table as unknown as Question["table"];
   const issue = questionIssues(q);
   if (issue) return `Câu ${index + 1}: ${issue}`;
   return q;

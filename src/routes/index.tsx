@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { DauIcon } from "@/components/marks";
+import { NamePromptModal } from "@/components/name-prompt-modal";
 import { Shell } from "@/components/shell";
 import { useLaunch } from "@/components/use-launch";
 import { formatScore } from "@/game/engine";
@@ -16,12 +17,14 @@ const MODE_COLORS: Record<Mode, string> = {
   time: "bg-[#e21b3c]",
   survival: "bg-[#26890c]",
   endless: "bg-[#d89e00]",
+  admin: "bg-[#8b5cf6]",
 };
 
 function Home() {
   const [mode, setMode] = useState<Mode>("classic");
   const [selectedQuizId, setSelectedQuizId] = useState<string>(BUILTINS[0]!.id);
   const [customCount, setCustomCount] = useState<number | null>(10);
+  const [showNameModal, setShowNameModal] = useState(false);
   const records = useGame((s) => s.records);
   const launch = useLaunch();
 
@@ -29,6 +32,15 @@ function Home() {
   const modeMeta = MODES.find((item) => item.id === mode)!;
   const totalQ = featured.questions.length;
   const countOptions = [5, 10, 15, 20, 30, null];
+
+  function handleStart() {
+    setShowNameModal(true);
+  }
+
+  function handleConfirmName() {
+    setShowNameModal(false);
+    launch(featured.id, mode, customCount ?? undefined);
+  }
 
   return (
     <Shell wide>
@@ -218,7 +230,7 @@ function Home() {
           {/* Launch Button */}
           <button
             type="button"
-            onClick={() => launch(featured.id, mode, customCount ?? undefined)}
+            onClick={handleStart}
             className="tile-btn kahoot-3 mt-5 flex min-h-13 w-full items-center justify-center rounded-xl px-5 py-3.5 text-lg font-extrabold text-white"
           >
             Bắt đầu · {modeMeta.name} {customCount ? `(${customCount} câu)` : ""}
@@ -230,6 +242,13 @@ function Home() {
           </div>
         </article>
       </div>
+
+      <NamePromptModal
+        open={showNameModal}
+        quizId={featured.id}
+        onConfirm={handleConfirmName}
+        onCancel={() => setShowNameModal(false)}
+      />
     </Shell>
   );
 }
