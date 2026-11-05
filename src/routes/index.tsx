@@ -97,7 +97,7 @@ function Home() {
               </Link>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              {BUILTINS.slice(0, 4).map((q) => {
+              {BUILTINS.slice(0, 6).map((q) => {
                 const isSelected = q.id === featured.id;
                 return (
                   <button
